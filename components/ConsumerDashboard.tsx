@@ -1,5 +1,6 @@
+
 import React, { useState, useEffect, useMemo } from 'react';
-import { User, Order, Product, ParsedOrderItem, OrderItem } from '../types';
+import { User, Order, Product, ParsedOrderItem, OrderItem, Customer } from '../types';
 import { mockService } from '../services/mockDataService';
 import { parseNaturalLanguageOrder } from '../services/geminiService';
 import { 
@@ -7,13 +8,208 @@ import {
   CheckCircle, Clock, Package, Leaf, ArrowRight, Search,
   X, Loader2, Check, Sparkles, ShoppingCart, AlertTriangle,
   ChevronRight, Minus, Plus, RefreshCcw, Calendar, Edit3, 
-  User as UserIcon, LayoutGrid, BookOpen, AlertCircle
+  User as UserIcon, LayoutGrid, BookOpen, AlertCircle, FileText,
+  Smartphone,
+  ChevronDown,
+  Timer, Info, Heart
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 interface ConsumerDashboardProps {
   user: User;
 }
+
+const OrderDetailsModal = ({ isOpen, onClose, order, products, customer, isBlocked }: { 
+    isOpen: boolean, 
+    onClose: () => void, 
+    order: Order | null, 
+    products: Product[],
+    customer: Customer | null,
+    isBlocked: boolean
+}) => {
+    const [issueReported, setIssueReported] = useState(false);
+    const [issueDescription, setIssueDescription] = useState('');
+    const [reportingMode, setReportingMode] = useState(false);
+    const [now, setNow] = useState(new Date());
+
+    useEffect(() => {
+        const timer = setInterval(() => setNow(new Date()), 1000);
+        return () => clearInterval(timer);
+    }, []);
+
+    if (!isOpen || !order) return null;
+
+    const seller = mockService.getAllUsers().find(u => u.id === order.sellerId);
+    
+    // Issue Reporting Window Logic
+    const windowMins = customer?.issueReportingWindowMinutes || 60;
+    const deliveredTime = order.deliveredAt ? new Date(order.deliveredAt).getTime() : null;
+    const expiryTime = deliveredTime ? deliveredTime + (windowMins * 60 * 1000) : null;
+    const isWindowActive = expiryTime ? now.getTime() < expiryTime : false;
+    
+    const diff = expiryTime ? expiryTime - now.getTime() : 0;
+    const minsLeft = Math.max(0, Math.floor(diff / 60000));
+    const secsLeft = Math.max(0, Math.floor((diff % 60000) / 1000));
+
+    const handleReportIssue = () => {
+        if (!issueDescription.trim()) return;
+        mockService.submitOrderIssue(order.id, 'Product Quality', issueDescription);
+        setIssueReported(true);
+        setReportingMode(false);
+        setTimeout(() => onClose(), 2000);
+    };
+
+    return (
+        <div className="fixed inset-0 z-[400] flex items-center justify-center bg-black/60 backdrop-blur-md p-4 animate-in fade-in duration-300">
+            <div className="bg-white rounded-[3rem] shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh] animate-in zoom-in-95">
+                <div className="p-8 border-b border-gray-100 flex justify-between items-center bg-gray-50/50 shrink-0">
+                    <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 bg-[#043003] rounded-2xl flex items-center justify-center text-white font-black shadow-lg">P</div>
+                        <div>
+                            <h2 className="text-2xl font-black text-gray-900 uppercase tracking-tight leading-none">Order Details</h2>
+                            <p className="text-[10px] text-indigo-500 font-black uppercase tracking-widest mt-1.5">Manifest Reference: #{order.id.split('-').pop()}</p>
+                        </div>
+                    </div>
+                    <button onClick={onClose} className="text-gray-300 hover:text-gray-900 p-2 bg-white rounded-full border border-gray-100 shadow-sm transition-all"><X size={24} strokeWidth={2.5}/></button>
+                </div>
+
+                <div className="flex-1 overflow-y-auto p-10 space-y-10 custom-scrollbar">
+                    {/* TOP INFO GRID */}
+                    <div className="grid grid-cols-2 gap-8">
+                        <div>
+                            <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Order Placed</p>
+                            <p className="font-black text-gray-900 text-lg tracking-tight">{new Date(order.date).toLocaleDateString()} @ {new Date(order.date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</p>
+                        </div>
+                        <div>
+                            <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Authorized Buyer</p>
+                            <p className="font-black text-gray-900 text-lg tracking-tight truncate">{order.logistics?.instructions?.replace('Contact: ', '') || customer?.contactName}</p>
+                        </div>
+                        <div>
+                            <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Supplier Anchor</p>
+                            <p className="font-black text-indigo-600 text-lg tracking-tight uppercase leading-none">{seller?.businessName}</p>
+                        </div>
+                        <div>
+                            <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Current Status</p>
+                            <span className="bg-emerald-50 text-emerald-700 px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-[0.15em] border border-emerald-100 shadow-inner-sm">{order.status}</span>
+                        </div>
+                    </div>
+
+                    {/* DELIVERY STATUS BLOCK */}
+                    <div className="bg-gray-50 rounded-[2.5rem] p-8 border border-gray-100 relative overflow-hidden">
+                        <div className="absolute top-0 right-0 p-6 opacity-[0.03] transform rotate-12 scale-150"><Truck size={100}/></div>
+                        <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-6 flex items-center gap-2">
+                            <Truck size={16} className="text-indigo-500"/> FULFILLMENT COORDINATES
+                        </h4>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
+                            <div>
+                                <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">Expected Delivery</p>
+                                <p className="font-black text-gray-900">{order.logistics?.deliveryDate || 'TBD'} <span className="text-indigo-600">@{order.logistics?.deliveryTime || 'Scheduling'}</span></p>
+                            </div>
+                            <div>
+                                <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">Destination Address</p>
+                                <p className="font-black text-gray-900 truncate">{order.logistics?.deliveryLocation || customer?.location}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* PRODUCT LIST */}
+                    <div className="space-y-4">
+                        <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
+                            <Package size={16} className="text-emerald-500"/> PRODUCT MANIFEST
+                        </h4>
+                        <div className="divide-y divide-gray-100 border border-gray-100 rounded-[2rem] overflow-hidden bg-gray-50/20">
+                            {order.items.map((item, idx) => {
+                                const p = products.find(prod => prod.id === item.productId);
+                                return (
+                                    <div key={idx} className="p-5 flex items-center justify-between hover:bg-white transition-all group">
+                                        <div className="flex items-center gap-4">
+                                            <div className="w-12 h-12 rounded-xl overflow-hidden border border-gray-100 shrink-0">
+                                                <img src={p?.imageUrl} className="w-full h-full object-cover" />
+                                            </div>
+                                            <div>
+                                                <p className="font-black text-gray-900 text-sm uppercase truncate max-w-[180px] group-hover:text-emerald-700 transition-colors">{p?.name}</p>
+                                                <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">{p?.variety}</p>
+                                            </div>
+                                        </div>
+                                        <div className="text-right">
+                                            <p className="font-black text-gray-900 text-base tracking-tighter">{item.quantityKg}{p?.unit || 'kg'}</p>
+                                            <p className="text-[9px] font-black text-gray-300 uppercase tracking-widest">${item.pricePerKg.toFixed(2)}/u</p>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+
+                    {/* TOTAL */}
+                    <div className="flex justify-between items-end px-4">
+                        <div>
+                             <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Aggregate Total</p>
+                             <div className="flex items-center gap-2">
+                                <span className="bg-indigo-50 text-indigo-600 px-2 py-0.5 rounded text-[8px] font-black uppercase">{order.paymentMethod || 'invoice'}</span>
+                                <p className="text-4xl font-black text-gray-900 tracking-tighter">${order.totalAmount.toFixed(2)}</p>
+                             </div>
+                        </div>
+                        {order.status === 'Delivered' && !order.issue && isWindowActive && !reportingMode && (
+                             <button 
+                                onClick={() => setReportingMode(true)}
+                                className="px-6 py-3 bg-red-50 text-red-600 border border-red-100 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-red-600 hover:text-white transition-all shadow-sm flex items-center gap-2"
+                             >
+                                <AlertTriangle size={14}/> Report Product Issue
+                             </button>
+                        )}
+                    </div>
+
+                    {/* ISSUE REPORTING FORM */}
+                    {reportingMode && (
+                        <div className="animate-in slide-in-from-bottom-4 duration-300 p-8 bg-red-50 rounded-[2.5rem] border-2 border-red-100 space-y-6">
+                            <div className="flex justify-between items-center">
+                                <h5 className="font-black text-red-900 uppercase text-sm tracking-tight flex items-center gap-2">
+                                    <AlertCircle size={18}/> Detail Product Complaint
+                                </h5>
+                                <div className="text-[10px] font-black text-red-400 uppercase tracking-widest flex items-center gap-2">
+                                    <Timer size={14}/> Resolution Window: {minsLeft}m {secsLeft}s left
+                                </div>
+                            </div>
+                            <textarea 
+                                value={issueDescription}
+                                onChange={(e) => setIssueDescription(e.target.value)}
+                                className="w-full h-32 p-4 bg-white border border-red-200 rounded-2xl font-medium text-gray-900 outline-none focus:ring-4 focus:ring-red-500/10 placeholder-red-200 resize-none"
+                                placeholder="Please describe the quality issue or short pick in detail..."
+                            />
+                            <div className="flex gap-3">
+                                <button onClick={() => setReportingMode(false)} className="flex-1 py-4 bg-white border border-red-100 text-red-400 rounded-xl font-black uppercase text-[10px] tracking-widest">Cancel</button>
+                                <button onClick={handleReportIssue} className="flex-[2] py-4 bg-red-600 text-white rounded-xl font-black uppercase text-[10px] tracking-[0.2em] shadow-lg shadow-red-200">Submit to HQ & Supplier</button>
+                            </div>
+                        </div>
+                    )}
+
+                    {issueReported && (
+                        <div className="p-8 bg-emerald-50 rounded-[2.5rem] border-2 border-emerald-100 text-center animate-in zoom-in-95">
+                            <CheckCircle size={40} className="text-emerald-600 mx-auto mb-4"/>
+                            <h5 className="text-xl font-black text-emerald-900 uppercase tracking-tight">Report Received</h5>
+                            <p className="text-sm text-emerald-700 font-medium mt-2">PZ HQ, your Sales Rep, and the Supplier have been alerted. We'll resolve this within 1 business day.</p>
+                        </div>
+                    )}
+                    
+                    {order.status === 'Delivered' && !isWindowActive && !order.issue && (
+                        <div className="p-6 bg-gray-50 rounded-2xl border border-gray-100 flex items-center gap-4">
+                            <Info size={20} className="text-gray-400 shrink-0"/>
+                            <p className="text-[11px] text-gray-500 font-medium leading-relaxed">
+                                The <span className="font-black">Standard Reporting Window</span> for this order has expired. For urgent inquiries, please contact your PZ Representative Alex directly.
+                            </p>
+                        </div>
+                    )}
+                </div>
+
+                <div className="p-8 border-t border-gray-100 bg-white flex justify-between items-center">
+                    <p className="text-[9px] font-black text-gray-300 uppercase tracking-[0.3em]">Platform Zero Official Trade Manifest</p>
+                    <button onClick={onClose} className="px-10 py-3 bg-gray-100 text-gray-400 hover:text-gray-600 rounded-xl font-black uppercase text-[10px] tracking-widest transition-all">Close</button>
+                </div>
+            </div>
+        </div>
+    );
+};
 
 const CheckoutModal = ({ isOpen, onClose, items, products, onPlaceOrder, isBlocked }: { 
     isOpen: boolean, 
@@ -126,7 +322,7 @@ const CheckoutModal = ({ isOpen, onClose, items, products, onPlaceOrder, isBlock
                             </h3>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                                 <div>
-                                    <label className="block text-[10px] font-black text-gray-900 uppercase tracking-widest mb-2 ml-1">Delivery Date</label>
+                                    <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Delivery Date</label>
                                     <div className="relative">
                                         <Calendar size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"/>
                                         <input 
@@ -139,7 +335,7 @@ const CheckoutModal = ({ isOpen, onClose, items, products, onPlaceOrder, isBlock
                                     </div>
                                 </div>
                                 <div>
-                                    <label className="block text-[10px] font-black text-gray-900 uppercase tracking-widest mb-2 ml-1">Delivery Time</label>
+                                    <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Delivery Time</label>
                                     <div className="relative">
                                         <Clock size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"/>
                                         <input 
@@ -153,7 +349,7 @@ const CheckoutModal = ({ isOpen, onClose, items, products, onPlaceOrder, isBlock
                                 </div>
                             </div>
                             <div>
-                                <label className="block text-[10px] font-black text-gray-900 uppercase tracking-widest mb-2 ml-1">Who made the order?</label>
+                                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Who made the order?</label>
                                 <div className="relative">
                                     <UserIcon size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"/>
                                     <input 
@@ -400,7 +596,7 @@ const AiQuickOrder = ({ onItemsConfirmed, catalog, isBlocked }: { onItemsConfirm
                     <button 
                         onClick={handleParse}
                         disabled={isParsing || !text.trim() || isBlocked}
-                        className="mt-8 w-full py-6 bg-[#0F172A] text-white rounded-[1.5rem] font-black uppercase tracking-[0.2em] text-xs shadow-2xl hover:bg-black transition-all flex items-center justify-center gap-3 disabled:opacity-50 active:scale-[0.98] shrink-0"
+                        className="mt-8 w-full py-6 bg-[#0F172A] text-white rounded-[1.5rem] font-black uppercase tracking-[0.2em] text-xs shadow-2xl hover:bg-black transition-all flex items-center justify-center gap-3 disabled:opacity-50 active:scale-95 shrink-0"
                     >
                         {isParsing ? (
                             <><Loader2 size={20} className="animate-spin" /> Matching Catalog...</>
@@ -418,7 +614,7 @@ const OrderTuningPanel = ({ order, products, onConfirm, onCancel, isBlocked }: {
     order: Order, 
     products: Product[], 
     onConfirm: (items: OrderItem[]) => void, 
-    onCancel: () => void,
+    onCancel: () => void, 
     isBlocked: boolean
 }) => {
     const [editedItems, setEditedItems] = useState<OrderItem[]>([]);
@@ -495,7 +691,13 @@ const OrderTuningPanel = ({ order, products, onConfirm, onCancel, isBlocked }: {
     );
 };
 
-const WeeklyOrderCalendar = ({ orders, products, onReorder, isBlocked }: { orders: Order[], products: Product[], onReorder: (items: OrderItem[]) => void, isBlocked: boolean }) => {
+const WeeklyOrderCalendar = ({ orders, products, onReorder, onSelectOrder, isBlocked }: { 
+    orders: Order[], 
+    products: Product[], 
+    onReorder: (items: OrderItem[]) => void, 
+    onSelectOrder: (order: Order) => void,
+    isBlocked: boolean 
+}) => {
     const [selectedDate, setSelectedDate] = useState<Date>(new Date());
     const [viewingOrder, setViewingOrder] = useState<Order | null>(null);
 
@@ -578,7 +780,7 @@ const WeeklyOrderCalendar = ({ orders, products, onReorder, isBlocked }: { order
                             </div>
                         ) : (
                             ordersForSelectedDay.map(order => (
-                                <div key={order.id} className="p-6 bg-white border border-gray-100 rounded-3xl shadow-sm hover:shadow-md transition-all group">
+                                <div key={order.id} className="p-6 bg-white border border-gray-100 rounded-3xl shadow-sm hover:shadow-md transition-all group cursor-pointer" onClick={() => onSelectOrder(order)}>
                                     <div className="flex justify-between items-start mb-4">
                                         <div className="flex items-center gap-4">
                                             <div className="w-12 h-12 bg-gray-50 rounded-2xl flex items-center justify-center text-gray-400 group-hover:bg-indigo-50 group-hover:text-indigo-600 transition-all">
@@ -593,7 +795,7 @@ const WeeklyOrderCalendar = ({ orders, products, onReorder, isBlocked }: { order
                                             </div>
                                         </div>
                                         <div className={`px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest border ${
-                                            order.status === 'Delivered' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-indigo-50 text-indigo-700 border-indigo-100'
+                                            order.status === 'Delivered' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-indigo-50 text-indigo-700 border-indigo-100'
                                         }`}>
                                             {order.status}
                                         </div>
@@ -601,13 +803,13 @@ const WeeklyOrderCalendar = ({ orders, products, onReorder, isBlocked }: { order
                                     
                                     <div className="flex gap-2">
                                         <button 
-                                            onClick={() => setViewingOrder(order)}
+                                            onClick={(e) => { e.stopPropagation(); setViewingOrder(order); }}
                                             className="flex-1 py-3 bg-[#0F172A] hover:bg-black text-white rounded-xl font-black text-[9px] uppercase tracking-[0.15em] transition-all flex items-center justify-center gap-2"
                                         >
                                             <Edit3 size={14}/> Edit & Re-order
                                         </button>
                                         <button 
-                                            onClick={() => onReorder(order.items)}
+                                            onClick={(e) => { e.stopPropagation(); onReorder(order.items); }}
                                             disabled={isBlocked}
                                             className="px-4 py-3 bg-white border border-gray-200 text-gray-500 rounded-xl font-black text-[9px] uppercase tracking-[0.15em] hover:bg-gray-50 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
                                         >
@@ -624,7 +826,7 @@ const WeeklyOrderCalendar = ({ orders, products, onReorder, isBlocked }: { order
     );
 };
 
-const ActiveRunStatus = ({ order, products }: { order: Order, products: Product[] }) => {
+const ActiveRunStatus = ({ order, products, onClick, customer }: { order: Order, products: Product[], onClick: () => void, customer: Customer | null }) => {
     const navigate = useNavigate();
     const [timeLeft, setTimeLeft] = useState<string>('');
 
@@ -634,7 +836,8 @@ const ActiveRunStatus = ({ order, products }: { order: Order, products: Product[
         const updateTimer = () => {
             const delivered = new Date(order.deliveredAt!).getTime();
             const now = new Date().getTime();
-            const diff = (90 * 60 * 1000) - (now - delivered);
+            const windowMins = customer?.issueReportingWindowMinutes || 60;
+            const diff = (windowMins * 60 * 1000) - (now - delivered);
             
             if (diff <= 0) {
                 setTimeLeft('00:00');
@@ -649,7 +852,7 @@ const ActiveRunStatus = ({ order, products }: { order: Order, products: Product[
         updateTimer();
         const interval = setInterval(updateTimer, 1000);
         return () => clearInterval(interval);
-    }, [order.status, order.deliveredAt]);
+    }, [order.status, order.deliveredAt, customer]);
 
     const steps = [
         { label: 'PENDING', icon: Clock, time: order.confirmedAt, active: true },
@@ -661,14 +864,19 @@ const ActiveRunStatus = ({ order, products }: { order: Order, products: Product[
     const currentStepIndex = steps.filter(s => s.active).length - 1;
 
     return (
-        <div className="bg-white rounded-[2rem] shadow-sm border border-gray-100 overflow-hidden flex flex-col animate-in slide-in-from-left-4 h-fit">
+        <div 
+            onClick={onClick}
+            className="bg-white rounded-[2rem] shadow-sm border border-gray-100 overflow-hidden flex flex-col animate-in slide-in-from-left-4 h-fit cursor-pointer hover:shadow-xl transition-all group"
+        >
             <div className="p-6 border-b border-gray-100 flex justify-between items-start bg-gray-50/20">
                 <h2 className="text-base font-black text-gray-900 uppercase tracking-tight">Active Incoming Delivery</h2>
-                <button onClick={() => navigate('/orders')} className="text-emerald-600 font-black text-[9px] uppercase tracking-widest hover:underline">TRACKING HISTORY</button>
+                <div className="flex items-center gap-1.5 text-emerald-600 font-black text-[9px] uppercase tracking-widest">
+                   LIVE TRACKING <ArrowRight size={12}/>
+                </div>
             </div>
 
             <div className="p-8 space-y-10">
-                <div className="bg-indigo-50/40 rounded-3xl p-6 flex flex-col sm:flex-row justify-between items-center border border-indigo-100 relative group">
+                <div className="bg-indigo-50/40 rounded-3xl p-6 flex flex-col sm:flex-row justify-between items-center border border-indigo-100 relative group-hover:bg-indigo-50 transition-colors">
                     <div className="text-center sm:text-left">
                         <p className="font-black text-gray-900 text-2xl tracking-tighter mb-1 uppercase">Order #{order.id.split('-').pop()}</p>
                         <p className="text-[10px] font-bold text-indigo-600 uppercase tracking-widest">
@@ -722,16 +930,13 @@ const ActiveRunStatus = ({ order, products }: { order: Order, products: Product[
                                 </div>
                             </div>
 
-                            <button 
-                                onClick={() => navigate('/orders')}
-                                className="w-full py-5 bg-[#043003] hover:bg-black text-white rounded-2xl font-black uppercase tracking-[0.2em] shadow-xl flex items-center justify-center gap-3 active:scale-95 transition-all text-xs"
-                            >
+                            <div className="w-full py-5 bg-[#043003] hover:bg-black text-white rounded-2xl font-black uppercase tracking-[0.2em] shadow-xl flex items-center justify-center gap-3 active:scale-95 transition-all text-xs">
                                 <Clock size={16} className="animate-pulse text-emerald-400"/>
-                                VERIFY ITEMS ({timeLeft})
-                            </button>
+                                ISSUE REPORTING WINDOW ({timeLeft})
+                            </div>
                         </div>
                     ) : (
-                        <div className="bg-gray-50 rounded-2xl p-4 flex items-center justify-between border border-gray-100">
+                        <div className="bg-gray-50 rounded-2xl p-4 flex items-center justify-between border border-gray-100 group-hover:bg-white transition-colors">
                              <div className="flex items-center gap-3 text-gray-500 text-[9px] font-black uppercase tracking-widest">
                                 <MapPin size={16} className="text-indigo-400"/>
                                 {order.logistics?.deliveryLocation || 'Location TBD'}
@@ -741,9 +946,9 @@ const ActiveRunStatus = ({ order, products }: { order: Order, products: Product[
                                     <p className="text-[8px] font-black text-gray-300 uppercase tracking-widest">Driver</p>
                                     <p className="text-[10px] font-black text-gray-900 uppercase">{order.logistics?.driverName || 'Allocating...'}</p>
                                 </div>
-                                <button className="p-2 bg-white rounded-lg border border-gray-200 shadow-sm text-indigo-600">
+                                <div className="p-2 bg-white rounded-lg border border-gray-200 shadow-sm text-indigo-600">
                                     <ArrowRight size={14}/>
-                                </button>
+                                </div>
                             </div>
                         </div>
                     )}
@@ -759,6 +964,7 @@ export const ConsumerDashboard: React.FC<ConsumerDashboardProps> = ({ user }) =>
   const [products, setProducts] = useState<Product[]>([]);
   const [checkoutItems, setCheckoutItems] = useState<OrderItem[] | null>(null);
   const [isBlocked, setIsBlocked] = useState(false);
+  const [selectedOrderForDetail, setSelectedOrderForDetail] = useState<Order | null>(null);
   
   // Mobile Tab State
   const [activeMobileFeature, setActiveMobileFeature] = useState<'WEEKLY' | 'AI_QUICK' | 'DELIVERIES'>('WEEKLY');
@@ -776,7 +982,12 @@ export const ConsumerDashboard: React.FC<ConsumerDashboardProps> = ({ user }) =>
   }, [user.id]);
 
   const activeRuns = allOrders.filter(o => ['Pending', 'Confirmed', 'Ready for Delivery', 'Shipped', 'Delivered'].includes(o.status));
-  const activeOrderForTracking = activeRuns.find(o => o.status === 'Delivered' && !o.isFullyVerified) || activeRuns[0];
+  const activeOrderForTracking = activeRuns.find(o => o.status === 'Delivered' && !o.issue) || activeRuns[0];
+  const customer = mockService.getCustomers().find(c => c.id === user.id) || null;
+
+  const favoriteProducts = useMemo(() => {
+      return products.filter(p => user.favoriteProductIds?.includes(p.id));
+  }, [products, user.favoriteProductIds]);
 
   const handleConfirmedItems = (confirmedItems: OrderItem[]) => {
       if (isBlocked) return;
@@ -822,6 +1033,50 @@ export const ConsumerDashboard: React.FC<ConsumerDashboardProps> = ({ user }) =>
                   <button onClick={() => navigate('/accounts')} className="mt-4 px-6 py-2 bg-white border border-red-200 text-red-600 font-black text-[10px] uppercase tracking-widest rounded-lg hover:bg-red-50 transition-all">Settle Account Now</button>
               </div>
           </div>
+      )}
+
+      {/* Favorites Section */}
+      {favoriteProducts.length > 0 && (
+          <section className="animate-in slide-in-from-left-4 duration-500 px-2">
+              <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center gap-3">
+                      <div className="p-2.5 bg-red-50 text-red-500 rounded-2xl shadow-sm">
+                          <Heart size={24} fill="currentColor"/>
+                      </div>
+                      <div>
+                          <h2 className="text-2xl font-black text-gray-900 uppercase tracking-tight leading-none">Your Staples</h2>
+                          <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-1">Quick re-order frequent items</p>
+                      </div>
+                  </div>
+                  <button onClick={() => navigate('/marketplace')} className="text-indigo-600 font-black text-[10px] uppercase tracking-widest hover:underline flex items-center gap-1.5">Full Catalog <ChevronRight size={14}/></button>
+              </div>
+
+              <div className="flex gap-4 overflow-x-auto no-scrollbar pb-4 -mx-2 px-2">
+                  {favoriteProducts.map(p => (
+                      <div key={p.id} className="min-w-[280px] md:min-w-[320px] bg-white rounded-[2.5rem] border border-gray-100 p-6 md:p-8 shadow-sm hover:shadow-xl transition-all group flex flex-col justify-between">
+                          <div className="flex items-center gap-5 mb-8">
+                              <div className="w-16 h-16 md:w-20 md:h-20 rounded-2xl overflow-hidden border border-gray-100 bg-gray-50 shrink-0">
+                                  <img src={p.imageUrl} className="w-full h-full object-cover" alt=""/>
+                              </div>
+                              <div>
+                                  <h4 className="font-black text-gray-900 text-lg uppercase leading-tight truncate max-w-[140px] group-hover:text-emerald-700 transition-colors">{p.name}</h4>
+                                  <div className="flex items-baseline gap-1 mt-1">
+                                      <span className="text-xl font-black text-gray-900 tracking-tighter">${p.defaultPricePerKg.toFixed(2)}</span>
+                                      <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">/ kg</span>
+                                  </div>
+                              </div>
+                          </div>
+                          <button 
+                            onClick={() => handleConfirmedItems([{ productId: p.id, quantityKg: 10, pricePerKg: p.defaultPricePerKg, unit: 'KG' }])}
+                            disabled={isBlocked}
+                            className="w-full py-4 bg-gray-50 text-gray-900 rounded-[1.25rem] font-black text-[10px] uppercase tracking-[0.15em] border border-gray-100 hover:bg-[#043003] hover:text-white transition-all active:scale-[0.98] disabled:opacity-50"
+                          >
+                              Quick Add 10kg
+                          </button>
+                      </div>
+                  ))}
+              </div>
+          </section>
       )}
 
       {/* Top Metrics Row */}
@@ -902,7 +1157,11 @@ export const ConsumerDashboard: React.FC<ConsumerDashboardProps> = ({ user }) =>
                         <div className="p-20 text-center text-gray-400">No previous orders found.</div>
                     ) : (
                         allOrders.slice(0, 5).map(order => (
-                            <div key={order.id} className="p-6 flex items-center justify-between hover:bg-gray-50 transition-all group">
+                            <div 
+                                key={order.id} 
+                                onClick={() => setSelectedOrderForDetail(order)}
+                                className="p-6 flex items-center justify-between hover:bg-gray-50 transition-all group cursor-pointer"
+                            >
                                 <div className="flex items-center gap-5">
                                     <div className="w-12 h-12 bg-indigo-50 rounded-2xl flex items-center justify-center text-indigo-600 shadow-inner-sm">
                                         <ShoppingCart size={20}/>
@@ -928,9 +1187,20 @@ export const ConsumerDashboard: React.FC<ConsumerDashboardProps> = ({ user }) =>
 
         <div className="space-y-8">
             {activeOrderForTracking && (
-                <ActiveRunStatus order={activeOrderForTracking} products={products} />
+                <ActiveRunStatus 
+                    order={activeOrderForTracking} 
+                    products={products} 
+                    customer={customer}
+                    onClick={() => setSelectedOrderForDetail(activeOrderForTracking)}
+                />
             )}
-            <WeeklyOrderCalendar orders={allOrders} products={products} onReorder={handleConfirmedItems} isBlocked={isBlocked} />
+            <WeeklyOrderCalendar 
+                orders={allOrders} 
+                products={products} 
+                onReorder={handleConfirmedItems} 
+                onSelectOrder={setSelectedOrderForDetail}
+                isBlocked={isBlocked} 
+            />
         </div>
       </div>
 
@@ -938,7 +1208,13 @@ export const ConsumerDashboard: React.FC<ConsumerDashboardProps> = ({ user }) =>
       <div className="md:hidden space-y-8">
           {activeMobileFeature === 'WEEKLY' && (
               <div className="animate-in slide-in-from-right-4 duration-500">
-                  <WeeklyOrderCalendar orders={allOrders} products={products} onReorder={handleConfirmedItems} isBlocked={isBlocked} />
+                  <WeeklyOrderCalendar 
+                    orders={allOrders} 
+                    products={products} 
+                    onReorder={handleConfirmedItems} 
+                    onSelectOrder={setSelectedOrderForDetail}
+                    isBlocked={isBlocked} 
+                  />
               </div>
           )}
           {activeMobileFeature === 'AI_QUICK' && (
@@ -949,7 +1225,12 @@ export const ConsumerDashboard: React.FC<ConsumerDashboardProps> = ({ user }) =>
           {activeMobileFeature === 'DELIVERIES' && (
               <div className="animate-in slide-in-from-right-4 duration-500">
                   {activeOrderForTracking ? (
-                      <ActiveRunStatus order={activeOrderForTracking} products={products} />
+                      <ActiveRunStatus 
+                        order={activeOrderForTracking} 
+                        products={products} 
+                        customer={customer}
+                        onClick={() => setSelectedOrderForDetail(activeOrderForTracking)}
+                      />
                   ) : (
                       <div className="p-12 text-center bg-white rounded-[2rem] border border-gray-100 shadow-sm">
                           <Truck size={48} className="mx-auto text-gray-100 mb-4" />
@@ -959,6 +1240,16 @@ export const ConsumerDashboard: React.FC<ConsumerDashboardProps> = ({ user }) =>
               </div>
           )}
       </div>
+
+      {/* FULL ORDER DETAIL MODAL */}
+      <OrderDetailsModal 
+        isOpen={!!selectedOrderForDetail}
+        onClose={() => setSelectedOrderForDetail(null)}
+        order={selectedOrderForDetail}
+        products={products}
+        customer={customer}
+        isBlocked={isBlocked}
+      />
 
       <CheckoutModal 
         isOpen={!!checkoutItems} 

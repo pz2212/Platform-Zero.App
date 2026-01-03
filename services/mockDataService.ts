@@ -31,11 +31,11 @@ export interface PortalInvite {
 }
 
 export const USERS: User[] = [
-  { id: 'u1', name: 'Admin User', businessName: 'Platform Zero', role: UserRole.ADMIN, email: 'admin@pz.com' },
-  { id: 'u2', name: 'Sarah Wholesaler', businessName: 'Fresh Wholesalers', role: UserRole.WHOLESALER, email: 'sarah@fresh.com', dashboardVersion: 'v2', activeSellingInterests: ['Tomatoes', 'Lettuce', 'Eggplants'], activeBuyingInterests: ['Potatoes', 'Apples'], businessProfile: { isComplete: true } as any },
-  { id: 'u3', name: 'Bob Farmer', businessName: 'Green Valley Farms', role: UserRole.FARMER, email: 'bob@greenvalley.com', dashboardVersion: 'v2', activeSellingInterests: ['Potatoes', 'Apples'], activeBuyingInterests: [], businessProfile: { isComplete: true } as any },
-  { id: 'u4', name: 'Alice Consumer', businessName: 'The Morning Cafe', role: UserRole.CONSUMER, email: 'alice@cafe.com', phone: '0412 345 678', industry: 'Cafe', smsNotificationsEnabled: true, businessProfile: { isComplete: true } as any },
-  { id: 'u5', name: 'Gary Grocer', businessName: 'Local Corner Grocers', role: UserRole.GROCERY, email: 'gary@grocer.com', phone: '0411 222 333', industry: 'Grocery Store', smsNotificationsEnabled: true, businessProfile: { isComplete: true } as any },
+  { id: 'u1', name: 'Admin User', businessName: 'Platform Zero', role: UserRole.ADMIN, email: 'admin@pz.com', favoriteProductIds: [] },
+  { id: 'u2', name: 'Sarah Wholesaler', businessName: 'Fresh Wholesalers', role: UserRole.WHOLESALER, email: 'sarah@fresh.com', dashboardVersion: 'v2', activeSellingInterests: ['Tomatoes', 'Lettuce', 'Eggplants'], activeBuyingInterests: ['Potatoes', 'Apples'], businessProfile: { isComplete: true } as any, favoriteProductIds: [] },
+  { id: 'u3', name: 'Bob Farmer', businessName: 'Green Valley Farms', role: UserRole.FARMER, email: 'bob@greenvalley.com', dashboardVersion: 'v2', activeSellingInterests: ['Potatoes', 'Apples'], activeBuyingInterests: [], businessProfile: { isComplete: true } as any, favoriteProductIds: [] },
+  { id: 'u4', name: 'Alice Consumer', businessName: 'The Morning Cafe', role: UserRole.CONSUMER, email: 'alice@cafe.com', phone: '0412 345 678', industry: 'Cafe', smsNotificationsEnabled: true, businessProfile: { isComplete: true } as any, favoriteProductIds: ['p1', 'p2', 'p-banana-cav'] },
+  { id: 'u5', name: 'Gary Grocer', businessName: 'Local Corner Grocers', role: UserRole.GROCERY, email: 'gary@grocer.com', phone: '0411 222 333', industry: 'Grocery Store', smsNotificationsEnabled: true, businessProfile: { isComplete: true } as any, favoriteProductIds: [] },
   { id: 'rep1', name: 'Alex Johnson', businessName: 'Platform Zero', role: UserRole.PZ_REP, email: 'rep1@pz.com', commissionRate: 5.0 },
   { id: 'rep2', name: 'Sam Taylor', businessName: 'Platform Zero', role: UserRole.PZ_REP, email: 'rep2@pz.com', commissionRate: 5.0 },
 ];
@@ -83,11 +83,11 @@ class MockDataService {
   private issues: OrderIssue[] = [];
   private notifications: AppNotification[] = [];
   private customers: Customer[] = [
-    { id: 'u4', businessName: 'The Morning Cafe', contactName: 'Alice Consumer', category: 'Restaurant', industry: 'Cafe', commonProducts: 'Bananas, Potatoes, Lettuce', location: 'Richmond', connectedSupplierId: 'u2', connectedSupplierName: 'Fresh Wholesalers', connectionStatus: 'Active', email: 'alice@cafe.com', phone: '0412 345 678', pzMarkup: 15, assignedPzRepId: 'rep1', assignedPzRepName: 'Alex Johnson', pzPaymentTermsDays: 7, supplierPaymentTermsDays: 14 },
-    { id: 'u5', businessName: 'Local Corner Grocers', contactName: 'Gary Grocer', category: 'Grocery', industry: 'Grocery Store', commonProducts: 'Everything', location: 'Fitzroy', connectedSupplierId: 'u2', connectedSupplierName: 'Fresh Wholesalers', connectionStatus: 'Active', email: 'gary@grocer.com', phone: '0411 222 333', pzMarkup: 12, assignedPzRepId: 'rep2', assignedPzRepName: 'Sam Taylor', pzPaymentTermsDays: 7, supplierPaymentTermsDays: 14 },
-    { id: 'c1', businessName: 'Fresh Market Co', contactName: 'Sarah Johnson', category: 'Retail', industry: 'Grocery Store', commonProducts: 'Tomatoes, Lettuce, Apples', location: 'Richmond', connectedSupplierId: 'u2', connectedSupplierName: 'Fresh Wholesalers', connectionStatus: 'Active', email: 'sarah@freshmarket.com', phone: '0400 999 888', pzMarkup: 15, assignedPzRepId: 'rep1', assignedPzRepName: 'Alex Johnson', pzPaymentTermsDays: 7, supplierPaymentTermsDays: 14 },
-    { id: 'c2', businessName: 'Healthy Eats', contactName: 'Chef Mario', category: 'Restaurant', industry: 'Restaurant', commonProducts: 'Tomatoes, Eggplant, Broccoli', location: 'South Yarra', connectedSupplierId: 'u3', connectedSupplierName: 'Green Valley Farms', connectionStatus: 'Active', email: 'mario@healthy.com', phone: '0455 111 222', pzMarkup: 18, assignedPzRepId: 'rep1', assignedPzRepName: 'Alex Johnson', pzPaymentTermsDays: 7, supplierPaymentTermsDays: 14 },
-    { id: 'c3', businessName: 'Richmond Corner Pub', contactName: 'Dave Smith', category: 'Pub/Bar', industry: 'Pub', location: 'Richmond', connectedSupplierId: 'u2', connectionStatus: 'Pricing Pending', email: 'dave@richmondpub.com', phone: '0488 777 666', pzMarkup: 15, assignedPzRepId: 'rep2', assignedPzRepName: 'Sam Taylor', pzPaymentTermsDays: 7, supplierPaymentTermsDays: 14 },
+    { id: 'u4', businessName: 'The Morning Cafe', contactName: 'Alice Consumer', category: 'Restaurant', industry: 'Cafe', commonProducts: 'Bananas, Potatoes, Lettuce', location: 'Richmond', connectedSupplierId: 'u2', connectedSupplierName: 'Fresh Wholesalers', connectionStatus: 'Active', email: 'alice@cafe.com', phone: '0412 345 678', pzMarkup: 15, assignedPzRepId: 'rep1', assignedPzRepName: 'Alex Johnson', pzPaymentTermsDays: 7, supplierPaymentTermsDays: 14, issueReportingWindowMinutes: 60 },
+    { id: 'u5', businessName: 'Local Corner Grocers', contactName: 'Gary Grocer', category: 'Grocery', industry: 'Grocery Store', commonProducts: 'Everything', location: 'Fitzroy', connectedSupplierId: 'u2', connectedSupplierName: 'Fresh Wholesalers', connectionStatus: 'Active', email: 'gary@grocer.com', phone: '0411 222 333', pzMarkup: 12, assignedPzRepId: 'rep2', assignedPzRepName: 'Sam Taylor', pzPaymentTermsDays: 7, supplierPaymentTermsDays: 14, issueReportingWindowMinutes: 90 },
+    { id: 'c1', businessName: 'Fresh Market Co', contactName: 'Sarah Johnson', category: 'Retail', industry: 'Grocery Store', commonProducts: 'Tomatoes, Lettuce, Apples', location: 'Richmond', connectedSupplierId: 'u2', connectedSupplierName: 'Fresh Wholesalers', connectionStatus: 'Active', email: 'sarah@freshmarket.com', phone: '0400 999 888', pzMarkup: 15, assignedPzRepId: 'rep1', assignedPzRepName: 'Alex Johnson', pzPaymentTermsDays: 7, supplierPaymentTermsDays: 14, issueReportingWindowMinutes: 60 },
+    { id: 'c2', businessName: 'Healthy Eats', contactName: 'Chef Mario', category: 'Restaurant', industry: 'Restaurant', commonProducts: 'Tomatoes, Eggplant, Broccoli', location: 'South Yarra', connectedSupplierId: 'u3', connectedSupplierName: 'Green Valley Farms', connectionStatus: 'Active', email: 'mario@healthy.com', phone: '0455 111 222', pzMarkup: 18, assignedPzRepId: 'rep1', assignedPzRepName: 'Alex Johnson', pzPaymentTermsDays: 7, supplierPaymentTermsDays: 14, issueReportingWindowMinutes: 60 },
+    { id: 'c3', businessName: 'Richmond Corner Pub', contactName: 'Dave Smith', category: 'Pub/Bar', industry: 'Pub', location: 'Richmond', connectedSupplierId: 'u2', connectionStatus: 'Pricing Pending', email: 'dave@richmondpub.com', phone: '0488 777 666', pzMarkup: 15, assignedPzRepId: 'rep2', assignedPzRepName: 'Sam Taylor', pzPaymentTermsDays: 7, supplierPaymentTermsDays: 14, issueReportingWindowMinutes: 120 },
   ];
 
   private drivers: Driver[] = [];
@@ -114,7 +114,6 @@ class MockDataService {
           id: `o-delivered-1`, buyerId: 'c1', sellerId: 'u2', items: [{ productId: 'p4', quantityKg: 20, pricePerKg: 5.50 }], totalAmount: 110.00, status: 'Delivered', date: oneHourAgo, deliveredAt: oneHourAgo, paymentStatus: 'Unpaid', supplierPayoutStatus: 'Pending', source: 'Direct'
       });
       const eightyMinsAgo = new Date(Date.now() - 80 * 60 * 1000).toISOString();
-      // Fix line 118: Added missing colon after 'date' property name and before 'eightyMinsAgo' value
       this.orders.push({
           id: `o-delivered-2`, buyerId: 'c2', sellerId: 'u3', items: [{ productId: 'p1', quantityKg: 40, pricePerKg: 4.50 }], totalAmount: 180.00, status: 'Delivered', date: eightyMinsAgo, deliveredAt: eightyMinsAgo, paymentStatus: 'Unpaid', supplierPayoutStatus: 'Pending', source: 'Marketplace'
       });
@@ -144,6 +143,51 @@ class MockDataService {
           repStatus: 'ACTIONING',
           assignedRepId: 'rep1'
       });
+  }
+
+  submitOrderIssue(orderId: string, issueType: string, description: string) {
+    const order = this.orders.find(o => o.id === orderId);
+    if (!order) return;
+
+    const customer = this.customers.find(c => c.id === order.buyerId);
+    const newIssue: OrderIssue = {
+        id: `iss-${Date.now()}`,
+        orderId,
+        type: issueType,
+        description,
+        reportedAt: new Date().toISOString(),
+        supplierStatus: 'PENDING',
+        repStatus: 'UNSEEN',
+        assignedRepId: customer?.assignedPzRepId
+    };
+
+    order.issue = newIssue;
+    this.issues.push(newIssue);
+
+    // Notify PZ Admin
+    this.addAppNotification('u1', 'New Dispute Reported', `Order #${order.id.split('-').pop()} has a reported ${issueType} issue.`, 'ISSUE');
+    
+    // Notify Rep
+    if (customer?.assignedPzRepId) {
+        this.addAppNotification(customer.assignedPzRepId, 'Urgent: Customer Issue', `${customer.businessName} reported a ${issueType} for Order #${order.id.split('-').pop()}.`, 'ISSUE');
+    }
+
+    // Notify Supplier
+    this.addAppNotification(order.sellerId, 'Dispute Alert', `A buyer reported a ${issueType} with Order #${order.id.split('-').pop()}. Action required.`, 'ISSUE');
+    
+    return newIssue;
+  }
+
+  toggleFavorite(userId: string, productId: string) {
+    const user = this.users.find(u => u.id === userId);
+    if (user) {
+        if (!user.favoriteProductIds) user.favoriteProductIds = [];
+        if (user.favoriteProductIds.includes(productId)) {
+            user.favoriteProductIds = user.favoriteProductIds.filter(id => id !== productId);
+        } else {
+            user.favoriteProductIds.push(productId);
+        }
+    }
   }
 
   createManualPortalInvite(data: { businessName: string, firstName: string, lastName: string, role: UserRole, email: string, mobile: string }): PortalInvite {
@@ -248,13 +292,28 @@ class MockDataService {
       const sellerId = buyerProfile?.connectedSupplierId || 'u2'; 
       const newOrder: Order = { id: `o-${Date.now()}`, buyerId, sellerId, items, totalAmount: total, status: 'Pending', date: new Date().toISOString(), paymentStatus: 'Unpaid', supplierPayoutStatus: 'Pending', source: 'Direct' };
       this.orders.push(newOrder);
-      this.addAppNotification(sellerId, 'New Order Received', `Order for $${total.toFixed(2)} received.`, 'ORDER');
+
+      // Workflow: Assigned Supplier receives the order to fulfill
+      this.addAppNotification(sellerId, 'New Order to Fulfill', `Order received from ${buyerProfile?.businessName || 'Market Buyer'} for $${total.toFixed(2)}.`, 'ORDER');
+      
+      // Workflow: PZ Admin receives a record of the transaction
+      this.addAppNotification('u1', 'Market Transaction Logged', `Trade confirmed: ${buyerProfile?.businessName} -> ${this.users.find(u => u.id === sellerId)?.businessName}. Total: $${total.toFixed(2)}`, 'ORDER');
+      
+      // Workflow: Invoice lands in customer profile (it's added to the global orders array, which is filtered by buyerId in the Accounts component)
       return newOrder;
   }
 
   createInstantOrder(buyerId: string, item: InventoryItem, quantity: number, price: number) {
+    const buyerProfile = this.customers.find(c => c.id === buyerId);
     const newOrder: Order = { id: `o-inst-${Date.now()}`, buyerId, sellerId: item.ownerId, items: [{ productId: item.productId, quantityKg: quantity, pricePerKg: price }], totalAmount: quantity * price, status: 'Confirmed', date: new Date().toISOString(), paymentStatus: 'Unpaid', supplierPayoutStatus: 'Pending', source: 'Marketplace' };
     this.orders.push(newOrder);
+
+    // Notify Supplier
+    this.addAppNotification(item.ownerId, 'Instant Sale Confirmed', `Wholesale purchase for $${newOrder.totalAmount.toFixed(2)} confirmed.`, 'ORDER');
+    
+    // Notify PZ Admin (u1)
+    this.addAppNotification('u1', 'Instant Market Sale', `Wholesale lot transaction of $${newOrder.totalAmount.toFixed(2)} completed.`, 'ORDER');
+
     return newOrder;
   }
 
@@ -378,7 +437,7 @@ class MockDataService {
   
   onboardNewBusiness(data: any): User {
     const userId = data.id || `u-${Date.now()}`;
-    const newUser: User = { id: userId, name: data.name || 'New Lead', businessName: data.businessName, email: data.email, role: data.role || (data.type === 'Supplier' ? UserRole.WHOLESALER : UserRole.CONSUMER), industry: data.industry, phone: data.phone, businessProfile: { isComplete: false, abn: data.abn, businessLocation: data.address } as any };
+    const newUser: User = { id: userId, name: data.name || 'New Lead', businessName: data.businessName, email: data.email, role: data.role || (data.type === 'Supplier' ? UserRole.WHOLESALER : UserRole.CONSUMER), industry: data.industry, phone: data.phone, businessProfile: { isComplete: false, abn: data.abn, businessLocation: data.address } as any, favoriteProductIds: [] };
     this.users.push(newUser);
     return newUser;
   }
@@ -407,7 +466,8 @@ class MockDataService {
                 connectionStatus: 'Active',
                 pzMarkup: 15,
                 pzPaymentTermsDays: 7,
-                supplierPaymentTermsDays: 14
+                supplierPaymentTermsDays: 14,
+                issueReportingWindowMinutes: 60
             });
         } else {
             const cust = this.customers.find(c => c.id === user.id);
@@ -464,7 +524,8 @@ class MockDataService {
         connectionStatus: 'Active',
         category: 'Restaurant',
         pzPaymentTermsDays: 7,
-        supplierPaymentTermsDays: 14
+        supplierPaymentTermsDays: 14,
+        issueReportingWindowMinutes: 60
       };
       this.customers.push(newCustomer);
       return newCustomer;

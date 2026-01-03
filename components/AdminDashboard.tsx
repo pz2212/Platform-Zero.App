@@ -8,11 +8,227 @@ import {
   Leaf, Activity, Globe, Zap, Clock, Package, ChevronRight, X,
   Eye, Pencil, Percent, Settings, UserPlus, FileText, ChevronDown,
   UserCheck, AlertTriangle, Wallet, BarChart3, TrendingDown, Info, Loader2,
-  Filter, ArrowLeft, Receipt, ChevronUp
+  Filter, ArrowLeft, Receipt, ChevronUp, History, ClipboardList, Truck,
+  MapPin, Calendar, CheckCircle2, Timer
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 type DrillDownType = 'ORDERS' | 'WHOLESALERS' | 'REVENUE' | 'LEDGER' | null;
+
+const CustomerOpsModal = ({ isOpen, onClose, customer, allOrders, products, allUsers }: { 
+    isOpen: boolean, 
+    onClose: () => void, 
+    customer: Customer | null, 
+    allOrders: Order[], 
+    products: Product[],
+    allUsers: User[]
+}) => {
+    const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
+
+    if (!isOpen || !customer) return null;
+
+    const customerOrders = allOrders.filter(o => o.buyerId === customer.id).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    const supplier = allUsers.find(u => u.id === customer.connectedSupplierId);
+
+    const getStatusSteps = (order: Order) => {
+        return [
+            { label: 'Logged', time: order.date, icon: ClipboardList, color: 'text-indigo-500' },
+            { label: 'Accepted', time: order.confirmedAt, icon: UserCheck, color: 'text-blue-500' },
+            { label: 'Packed', time: order.packedAt, icon: Package, color: 'text-purple-500' },
+            { label: 'Shipped', time: order.shippedAt, icon: Truck, color: 'text-sky-500' },
+            { label: 'Delivered', time: order.deliveredAt, icon: CheckCircle2, color: 'text-emerald-500' }
+        ];
+    };
+
+    return (
+        <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/60 backdrop-blur-md p-4 animate-in fade-in duration-300">
+            <div className="bg-white rounded-[3.5rem] shadow-2xl w-full max-w-5xl overflow-hidden flex flex-col max-h-[90vh] animate-in zoom-in-95 border-4 border-white/20">
+                {/* Header */}
+                <div className="p-8 md:p-10 border-b border-gray-100 flex justify-between items-center bg-gray-50/50 shrink-0">
+                    <div className="flex items-center gap-6">
+                        <div className="w-16 h-16 bg-indigo-600 rounded-[1.75rem] flex items-center justify-center text-white font-black text-2xl shadow-xl shadow-indigo-100">
+                            {customer.businessName.charAt(0)}
+                        </div>
+                        <div>
+                            <h2 className="text-3xl font-black text-gray-900 uppercase tracking-tighter leading-none">{customer.businessName}</h2>
+                            <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-2 flex items-center gap-2">
+                                <MapPin size={12}/> {customer.location || 'Market Location'} • <Store size={12}/> Supplier: {supplier?.businessName || 'Platform Zero Network'}
+                            </p>
+                        </div>
+                    </div>
+                    <button onClick={onClose} className="p-3 bg-white hover:bg-gray-100 rounded-full border border-gray-100 shadow-sm transition-all text-gray-300 hover:text-gray-900">
+                        <X size={28} strokeWidth={2.5}/>
+                    </button>
+                </div>
+
+                {/* Content */}
+                <div className="flex-1 overflow-y-auto p-8 md:p-10 custom-scrollbar space-y-10 bg-white">
+                    {/* Metrics Row */}
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <div className="bg-gray-50/80 p-5 rounded-3xl border border-gray-100">
+                            <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">Total Lifetime Trade</p>
+                            <p className="text-2xl font-black text-gray-900 tracking-tighter">${customerOrders.reduce((sum, o) => sum + o.totalAmount, 0).toLocaleString()}</p>
+                        </div>
+                        <div className="bg-gray-50/80 p-5 rounded-3xl border border-gray-100">
+                            <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">Active Logistics</p>
+                            <p className="text-2xl font-black text-indigo-600 tracking-tighter">{customerOrders.filter(o => !['Delivered', 'Cancelled'].includes(o.status)).length} Run(s)</p>
+                        </div>
+                        <div className="bg-gray-50/80 p-5 rounded-3xl border border-gray-100">
+                            <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">Profit Generation</p>
+                            <p className="text-2xl font-black text-emerald-600 tracking-tighter">${(customerOrders.reduce((sum, o) => sum + o.totalAmount, 0) * ((customer.pzMarkup || 15)/100)).toLocaleString()}</p>
+                        </div>
+                        <div className="bg-gray-50/80 p-5 rounded-3xl border border-gray-100">
+                            <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">Markup Tier</p>
+                            <p className="text-2xl font-black text-gray-900 tracking-tighter">{customer.pzMarkup || 15}%</p>
+                        </div>
+                    </div>
+
+                    {/* Order History */}
+                    <div className="space-y-6">
+                        <h3 className="text-sm font-black text-gray-900 uppercase tracking-[0.2em] flex items-center gap-2 px-1">
+                            <History size={18} className="text-indigo-500"/> Order Fulfillment Timeline
+                        </h3>
+
+                        {customerOrders.length === 0 ? (
+                            <div className="py-20 text-center bg-gray-50 rounded-[2.5rem] border border-dashed border-gray-200">
+                                <Package size={48} className="mx-auto text-gray-200 mb-4"/>
+                                <p className="text-sm font-black text-gray-400 uppercase tracking-widest">No orders found for this entity</p>
+                            </div>
+                        ) : (
+                            <div className="space-y-4">
+                                {customerOrders.map(order => {
+                                    const isExpanded = expandedOrderId === order.id;
+                                    const steps = getStatusSteps(order);
+                                    const currentSupplier = allUsers.find(u => u.id === order.sellerId);
+
+                                    return (
+                                        <div key={order.id} className={`bg-white rounded-[2rem] border transition-all overflow-hidden ${isExpanded ? 'border-indigo-600 shadow-xl' : 'border-gray-100 hover:border-indigo-200 shadow-sm'}`}>
+                                            <div 
+                                                onClick={() => setExpandedOrderId(isExpanded ? null : order.id)}
+                                                className="p-6 flex flex-col md:flex-row justify-between items-center gap-6 cursor-pointer"
+                                            >
+                                                <div className="flex items-center gap-6 flex-1">
+                                                    <div className={`p-4 rounded-2xl shadow-inner-sm border ${order.status === 'Delivered' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-indigo-50 text-indigo-600 border-indigo-100'}`}>
+                                                        <ShoppingCart size={24}/>
+                                                    </div>
+                                                    <div>
+                                                        <h4 className="font-black text-gray-900 text-lg tracking-tight uppercase leading-none mb-1.5">INV-{order.id.split('-').pop()}</h4>
+                                                        <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Logged: {new Date(order.date).toLocaleDateString()} @ {new Date(order.date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</p>
+                                                    </div>
+                                                </div>
+
+                                                <div className="flex items-center gap-10">
+                                                    <div className="text-right hidden lg:block">
+                                                        <p className="text-[8px] font-black text-gray-300 uppercase tracking-widest mb-1">Assigned Partner</p>
+                                                        <p className="text-xs font-black text-gray-900 uppercase tracking-tight truncate max-w-[120px]">{currentSupplier?.businessName}</p>
+                                                    </div>
+                                                    <div className="text-right">
+                                                        <p className="text-[8px] font-black text-gray-300 uppercase tracking-widest mb-1">Status</p>
+                                                        <span className={`px-3 py-1 rounded-lg text-[9px] font-black uppercase border tracking-widest shadow-sm ${
+                                                            order.status === 'Delivered' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' :
+                                                            order.status === 'Confirmed' ? 'bg-blue-50 text-blue-700 border-blue-100' :
+                                                            'bg-orange-50 text-orange-700 border-orange-100'
+                                                        }`}>
+                                                            {order.status}
+                                                        </span>
+                                                    </div>
+                                                    <div className="text-right w-24">
+                                                        <p className="text-[8px] font-black text-gray-300 uppercase tracking-widest mb-1">Amount</p>
+                                                        <p className="text-xl font-black text-gray-900 tracking-tighter">${order.totalAmount.toFixed(2)}</p>
+                                                    </div>
+                                                    <div className={`p-2 rounded-full transition-transform duration-300 ${isExpanded ? 'rotate-180 bg-indigo-50 text-indigo-600' : 'bg-gray-50 text-gray-300'}`}>
+                                                        <ChevronDown size={20}/>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {isExpanded && (
+                                                <div className="bg-gray-50/50 border-t border-gray-100 p-8 space-y-10 animate-in slide-in-from-top-4 duration-300">
+                                                    {/* Timeline */}
+                                                    <div className="space-y-6">
+                                                        <h5 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] flex items-center gap-2">
+                                                            <Timer size={14}/> FULFILLMENT AUDIT TRAIL
+                                                        </h5>
+                                                        <div className="flex justify-between items-start relative px-4">
+                                                            <div className="absolute top-5 left-10 right-10 h-0.5 bg-gray-200 z-0"></div>
+                                                            {steps.map((step, idx) => {
+                                                                const Icon = step.icon;
+                                                                const isComplete = !!step.time;
+                                                                return (
+                                                                    <div key={idx} className="flex flex-col items-center flex-1 relative z-10">
+                                                                        <div className={`w-10 h-10 rounded-2xl flex items-center justify-center transition-all duration-500 border-4 ${
+                                                                            isComplete ? 'bg-emerald-600 border-white text-white shadow-xl shadow-emerald-100' : 'bg-white border-gray-100 text-gray-200 shadow-sm'
+                                                                        }`}>
+                                                                            <Icon size={18} strokeWidth={isComplete ? 3 : 2}/>
+                                                                        </div>
+                                                                        <span className={`text-[9px] font-black uppercase tracking-widest mt-3 ${isComplete ? 'text-gray-900' : 'text-gray-300'}`}>{step.label}</span>
+                                                                        {isComplete && (
+                                                                            <p className="text-[8px] font-bold text-gray-400 mt-1">{new Date(step.time).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</p>
+                                                                        )}
+                                                                    </div>
+                                                                );
+                                                            })}
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Items Table */}
+                                                    <div className="bg-white rounded-3xl border border-gray-100 overflow-hidden shadow-inner-sm">
+                                                        <table className="w-full text-left">
+                                                            <thead className="bg-gray-50 text-[9px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-100">
+                                                                <tr>
+                                                                    <th className="px-6 py-4">Market Variety</th>
+                                                                    <th className="px-6 py-4 text-center">Volume</th>
+                                                                    <th className="px-6 py-4 text-right">Wholesale Rate</th>
+                                                                    <th className="px-6 py-4 text-right">Subtotal</th>
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody className="divide-y divide-gray-50">
+                                                                {order.items.map((item, iIdx) => {
+                                                                    const p = products.find(prod => prod.id === item.productId);
+                                                                    return (
+                                                                        <tr key={iIdx}>
+                                                                            <td className="px-6 py-4">
+                                                                                <div className="flex items-center gap-3">
+                                                                                    <div className="w-8 h-8 rounded-lg overflow-hidden bg-gray-50 shrink-0">
+                                                                                        <img src={p?.imageUrl} className="w-full h-full object-cover" />
+                                                                                    </div>
+                                                                                    <span className="font-black text-gray-800 text-xs uppercase tracking-tight">{p?.name || 'Unknown Produce'}</span>
+                                                                                </div>
+                                                                            </td>
+                                                                            <td className="px-6 py-4 text-center font-bold text-gray-500 text-xs">{item.quantityKg}{p?.unit || 'kg'}</td>
+                                                                            <td className="px-6 py-4 text-right font-black text-indigo-400 text-xs">${item.pricePerKg.toFixed(2)}</td>
+                                                                            <td className="px-6 py-4 text-right font-black text-indigo-600 text-sm">${(item.quantityKg * item.pricePerKg).toFixed(2)}</td>
+                                                                        </tr>
+                                                                    );
+                                                                })}
+                                                            </tbody>
+                                                            <tfoot className="bg-indigo-50/30 font-black text-xs uppercase tracking-widest text-indigo-700">
+                                                                <tr>
+                                                                    <td colSpan={3} className="px-6 py-4 text-right">Invoice Total</td>
+                                                                    <td className="px-6 py-4 text-right text-base tracking-tighter">${order.totalAmount.toFixed(2)}</td>
+                                                                </tr>
+                                                            </tfoot>
+                                                        </table>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        )}
+                    </div>
+                </div>
+
+                {/* Footer */}
+                <div className="p-8 border-t border-gray-100 bg-gray-50/50 flex justify-between items-center shrink-0">
+                    <p className="text-[9px] font-black text-gray-300 uppercase tracking-[0.3em]">Platform Zero Operations Protocol v3.1</p>
+                    <button onClick={onClose} className="px-12 py-3.5 bg-[#0F172A] hover:bg-black text-white rounded-xl font-black uppercase tracking-widest text-[10px] shadow-xl transition-all active:scale-95">Return to Control Center</button>
+                </div>
+            </div>
+        </div>
+    );
+};
 
 const RepAssignmentModal = ({ isOpen, onClose, customer, reps, onUpdate }: { isOpen: boolean, onClose: () => void, customer: Customer | null, reps: User[], onUpdate: () => void }) => {
     const [isSaving, setIsSaving] = useState(false);
@@ -130,7 +346,7 @@ const MarkupEditorModal = ({ isOpen, onClose, customer, onUpdate }: { isOpen: bo
     );
 };
 
-const ActionDropdown = ({ customer, onEditMarkup, onAssignRep }: { customer: Customer, onEditMarkup: (c: Customer) => void, onAssignRep: (c: Customer) => void }) => {
+const ActionDropdown = ({ customer, onEditMarkup, onAssignRep, onViewOps }: { customer: Customer, onEditMarkup: (c: Customer) => void, onAssignRep: (c: Customer) => void, onViewOps: (c: Customer) => void }) => {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -148,10 +364,11 @@ const ActionDropdown = ({ customer, onEditMarkup, onAssignRep }: { customer: Cus
       setIsOpen(false);
       if (label === 'Configure Markup') onEditMarkup(customer);
       if (label === 'Assign Sales Rep') onAssignRep(customer);
+      if (label === 'View Operations') onViewOps(customer);
   };
 
   const menuItems = [
-    { label: 'View Profile', icon: Eye, color: 'text-gray-600' },
+    { label: 'View Operations', icon: Eye, color: 'text-indigo-600' },
     { label: 'Edit Pricing', icon: Pencil, color: 'text-emerald-600' },
     { label: 'Set Pricing Tier', icon: Percent, color: 'text-purple-500' },
     { label: 'Configure Markup', icon: Settings, color: 'text-orange-500' },
@@ -205,6 +422,7 @@ export const AdminDashboard: React.FC = () => {
   const [allOrders, setAllOrders] = useState<Order[]>([]);
   const [allProducts, setAllProducts] = useState<Product[]>([]);
   const [pzReps, setPzReps] = useState<User[]>([]);
+  const [allUsers, setAllUsers] = useState<User[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [pendingCount, setPendingCount] = useState(0);
 
@@ -214,6 +432,7 @@ export const AdminDashboard: React.FC = () => {
   // Modal States
   const [editingMarkupCustomer, setEditingMarkupCustomer] = useState<Customer | null>(null);
   const [editingRepCustomer, setEditingRepCustomer] = useState<Customer | null>(null);
+  const [viewingOpsCustomer, setViewingOpsCustomer] = useState<Customer | null>(null);
 
   // Data for Drill Downs
   const [drillDownList, setDrillDownList] = useState<Order[]>([]);
@@ -231,6 +450,8 @@ export const AdminDashboard: React.FC = () => {
       setAllOrders(orders);
       setAllProducts(products);
       setPzReps(reps);
+      setAllUsers(users);
+      
       const today = new Date().toDateString();
       const todaysOrders = orders.filter(o => new Date(o.date).toDateString() === today);
       const totalGmv = orders.reduce((sum, o) => sum + o.totalAmount, 0);
@@ -352,10 +573,8 @@ export const AdminDashboard: React.FC = () => {
   };
 
   const handleCustomerOrdersDrillDown = (customerId: string) => {
-    setDrillDownCustomerId(customerId);
-    setExpandedInvoiceId(null);
-    setDrillDownList(allOrders.filter(o => o.buyerId === customerId));
-    setActiveDrillDown('ORDERS');
+    const cust = customers.find(c => c.id === customerId);
+    if (cust) setViewingOpsCustomer(cust);
   };
 
   const handleCustomerLedgerDrillDown = (customerId: string) => {
@@ -424,7 +643,7 @@ export const AdminDashboard: React.FC = () => {
         ))}
       </div>
 
-      {/* DRILL DOWN SECTION */}
+      {/* DRILL DOWN SECTION (Traditional Table Drill Downs) */}
       {activeDrillDown && (
           <div className="bg-white rounded-[2.5rem] border border-gray-200 shadow-xl animate-in slide-in-from-top-4 duration-300 overflow-hidden">
               <div className="p-8 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
@@ -643,9 +862,9 @@ export const AdminDashboard: React.FC = () => {
                         const isLedgerActive = drillDownCustomerId === customer.id && activeDrillDown === 'LEDGER';
                         
                         return (
-                            <tr key={customer.id} className="hover:bg-gray-50/50 transition-colors group">
+                            <tr key={customer.id} className="hover:bg-gray-50/50 transition-colors group cursor-pointer" onClick={() => setViewingOpsCustomer(customer)}>
                                 <td className="px-8 py-7">
-                                    <div className="font-black text-gray-900 text-base uppercase tracking-tight leading-none mb-1.5">{customer.businessName}</div>
+                                    <div className="font-black text-gray-900 text-base uppercase tracking-tight leading-none mb-1.5 group-hover:text-indigo-600 transition-colors">{customer.businessName}</div>
                                     <div className="text-[9px] text-gray-400 font-black uppercase tracking-widest">{customer.email || 'NO_RECORD@SYSTEM.IO'}</div>
                                 </td>
                                 <td className="px-8 py-7">
@@ -667,7 +886,7 @@ export const AdminDashboard: React.FC = () => {
                                 </td>
                                 <td className="px-8 py-7 text-right">
                                     <button 
-                                        onClick={() => setEditingMarkupCustomer(customer)}
+                                        onClick={(e) => { e.stopPropagation(); setEditingMarkupCustomer(customer); }}
                                         className="inline-flex items-center gap-1 font-black text-gray-900 text-sm hover:text-indigo-600 hover:scale-110 transition-all bg-gray-50 px-3 py-1.5 rounded-xl border border-transparent hover:border-indigo-100 shadow-inner-sm"
                                     >
                                         {customer.pzMarkup || 15}<span className="text-[10px] text-gray-400">%</span>
@@ -675,9 +894,9 @@ export const AdminDashboard: React.FC = () => {
                                 </td>
                                 <td className="px-8 py-7 text-center">
                                     <button 
-                                        onClick={() => handleCustomerOrdersDrillDown(customer.id)}
+                                        onClick={(e) => { e.stopPropagation(); handleCustomerOrdersDrillDown(customer.id); }}
                                         className={`px-4 py-2 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all shadow-sm ${
-                                            drillDownCustomerId === customer.id && activeDrillDown === 'ORDERS'
+                                            viewingOpsCustomer?.id === customer.id
                                             ? 'bg-indigo-600 text-white shadow-indigo-100'
                                             : 'bg-indigo-50 text-indigo-600 hover:bg-indigo-600 hover:text-white'
                                         }`}
@@ -687,7 +906,7 @@ export const AdminDashboard: React.FC = () => {
                                 </td>
                                 <td className="px-8 py-7 text-center">
                                     <button 
-                                        onClick={() => handleCustomerLedgerDrillDown(customer.id)}
+                                        onClick={(e) => { e.stopPropagation(); handleCustomerLedgerDrillDown(customer.id); }}
                                         disabled={m.outstanding === 0}
                                         className={`px-6 py-2.5 rounded-full font-black text-sm tracking-tight transition-all border-2 ${
                                             m.outstanding > 0 
@@ -708,7 +927,7 @@ export const AdminDashboard: React.FC = () => {
                                 </td>
                                 <td className="px-8 py-7">
                                     <button 
-                                        onClick={() => setEditingRepCustomer(customer)}
+                                        onClick={(e) => { e.stopPropagation(); setEditingRepCustomer(customer); }}
                                         className="flex items-center gap-2 group/rep bg-white hover:bg-indigo-50 p-2 rounded-xl border border-transparent hover:border-indigo-100 transition-all text-left w-full"
                                     >
                                         <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-slate-500 font-black text-[10px] uppercase group-hover/rep:bg-indigo-600 group-hover/rep:text-white transition-colors">{customer.assignedPzRepName?.charAt(0) || 'HQ'}</div>
@@ -723,6 +942,7 @@ export const AdminDashboard: React.FC = () => {
                                         customer={customer} 
                                         onEditMarkup={setEditingMarkupCustomer} 
                                         onAssignRep={setEditingRepCustomer}
+                                        onViewOps={setViewingOpsCustomer}
                                     />
                                 </td>
                             </tr>
@@ -746,6 +966,15 @@ export const AdminDashboard: React.FC = () => {
         customer={editingRepCustomer}
         reps={pzReps}
         onUpdate={loadStats}
+      />
+
+      <CustomerOpsModal 
+        isOpen={!!viewingOpsCustomer}
+        onClose={() => setViewingOpsCustomer(null)}
+        customer={viewingOpsCustomer}
+        allOrders={allOrders}
+        products={allProducts}
+        allUsers={allUsers}
       />
     </div>
   );

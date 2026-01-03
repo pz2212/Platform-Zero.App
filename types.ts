@@ -29,7 +29,7 @@ export interface AppNotification {
   userId: string;
   title: string;
   message: string;
-  type: 'ORDER' | 'LEAD' | 'SYSTEM' | 'APPLICATION' | 'PRICE_REQUEST';
+  type: 'ORDER' | 'LEAD' | 'SYSTEM' | 'APPLICATION' | 'PRICE_REQUEST' | 'ISSUE';
   timestamp: string;
   isRead: boolean;
   link?: string;
@@ -81,6 +81,7 @@ export interface User {
   activeBuyingInterests?: string[];
   commissionRate?: number;
   smsNotificationsEnabled?: boolean;
+  favoriteProductIds?: string[];
 }
 
 export type ProductUnit = 'KG' | 'Tray' | 'Bin' | 'Tonne' | 'loose' | 'Each' | 'Bag';
@@ -209,6 +210,7 @@ export interface Customer {
   onboardingData?: {
     deliveryAddress?: string;
   };
+  issueReportingWindowMinutes?: number;
   // Financial Terms
   pzPaymentTermsDays?: number; // Days for customer to pay PZ
   supplierPaymentTermsDays?: number; // Days for PZ to pay Supplier
