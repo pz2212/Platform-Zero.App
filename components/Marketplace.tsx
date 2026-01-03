@@ -6,7 +6,8 @@ import {
   ShoppingCart, Search, Plus, X, Leaf, Minus, 
   ArrowRight, ShoppingBag, Trash2, Truck, Calendar, Clock, 
   User as UserIcon, DollarSign, Check, CheckCircle, ChevronDown, Package,
-  Sparkles, Loader2, ImagePlus, Wind, Droplets, Recycle, AlertCircle
+  Sparkles, Loader2, ImagePlus, Wind, Droplets, Recycle, AlertCircle,
+  FileWarning
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
@@ -160,13 +161,14 @@ const AddProductModal = ({ isOpen, onClose, onComplete }: {
     );
 };
 
-const CheckoutModal = ({ isOpen, onClose, cart, products, onPlaceOrder, isBlocked }: { 
+const CheckoutModal = ({ isOpen, onClose, cart, products, onPlaceOrder, isBlocked, isOnboardingPending }: { 
     isOpen: boolean, 
     onClose: () => void, 
     cart: CartItem[], 
     products: Product[],
     onPlaceOrder: (details: any) => void,
-    isBlocked: boolean
+    isBlocked: boolean,
+    isOnboardingPending: boolean
 }) => {
     const [deliveryDate, setDeliveryDate] = useState('');
     const [deliveryTime, setDeliveryTime] = useState('');
@@ -180,7 +182,7 @@ const CheckoutModal = ({ isOpen, onClose, cart, products, onPlaceOrder, isBlocke
     const total = subtotal - discount;
 
     const handleSubmit = () => {
-        if (isBlocked) return;
+        if (isBlocked || isOnboardingPending) return;
         if (!deliveryDate || !contactName) {
             alert("Please complete delivery information and contact name.");
             return;
@@ -261,6 +263,20 @@ const CheckoutModal = ({ isOpen, onClose, cart, products, onPlaceOrder, isBlocke
                         </div>
                     )}
 
+                    {isOnboardingPending && (
+                        <div className="mb-10 bg-indigo-50 border-2 border-indigo-100 rounded-3xl p-6 flex items-start gap-5 animate-pulse">
+                            <div className="bg-indigo-600 text-white p-3 rounded-2xl shadow-lg">
+                                <FileWarning size={28}/>
+                            </div>
+                            <div>
+                                <p className="text-sm font-black text-indigo-900 uppercase tracking-tight">Onboarding Required</p>
+                                <p className="text-xs text-indigo-700 font-medium leading-relaxed mt-1">
+                                    Trading is restricted until your <span className="font-black">Onboarding Documents</span> are finalized and approved by PZ admin.
+                                </p>
+                            </div>
+                        </div>
+                    )}
+
                     <div className="space-y-10 flex-1">
                         <div className="space-y-6">
                             <h3 className="text-[11px] font-black text-gray-400 uppercase tracking-[0.2em] flex items-center gap-2">
@@ -273,7 +289,7 @@ const CheckoutModal = ({ isOpen, onClose, cart, products, onPlaceOrder, isBlocke
                                         <Calendar size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"/>
                                         <input 
                                             type="date" 
-                                            disabled={isBlocked}
+                                            disabled={isBlocked || isOnboardingPending}
                                             className="w-full pl-12 pr-4 py-4 bg-gray-50 border border-gray-100 rounded-2xl font-bold text-gray-900 outline-none focus:ring-4 focus:ring-emerald-500/5 focus:bg-white transition-all disabled:opacity-50"
                                             value={deliveryDate}
                                             onChange={e => setDeliveryDate(e.target.value)}
@@ -286,7 +302,7 @@ const CheckoutModal = ({ isOpen, onClose, cart, products, onPlaceOrder, isBlocke
                                         <Clock size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"/>
                                         <input 
                                             type="time" 
-                                            disabled={isBlocked}
+                                            disabled={isBlocked || isOnboardingPending}
                                             className="w-full pl-12 pr-4 py-4 bg-gray-50 border border-gray-100 rounded-2xl font-bold text-gray-900 outline-none focus:ring-4 focus:ring-emerald-500/5 focus:bg-white transition-all disabled:opacity-50"
                                             value={deliveryTime}
                                             onChange={e => setDeliveryTime(e.target.value)}
@@ -299,7 +315,7 @@ const CheckoutModal = ({ isOpen, onClose, cart, products, onPlaceOrder, isBlocke
                                 <div className="relative">
                                     <UserIcon size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"/>
                                     <input 
-                                        disabled={isBlocked}
+                                        disabled={isBlocked || isOnboardingPending}
                                         placeholder="Contact Name"
                                         className="w-full pl-12 pr-4 py-4 bg-gray-50 border border-gray-100 rounded-2xl font-bold text-gray-900 outline-none focus:ring-4 focus:ring-emerald-500/5 focus:bg-white transition-all disabled:opacity-50"
                                         value={contactName}
@@ -315,7 +331,7 @@ const CheckoutModal = ({ isOpen, onClose, cart, products, onPlaceOrder, isBlocke
                             </h3>
                             <div className="space-y-3">
                                 <button 
-                                    disabled={isBlocked}
+                                    disabled={isBlocked || isOnboardingPending}
                                     onClick={() => setPaymentMethod('pay_now')}
                                     className={`w-full p-6 rounded-3xl border-2 transition-all text-left flex items-center justify-between group disabled:opacity-50 ${paymentMethod === 'pay_now' ? 'border-[#043003] bg-emerald-50/20' : 'border-gray-50 bg-[#F8FAFC] hover:border-gray-200'}`}
                                 >
@@ -332,7 +348,7 @@ const CheckoutModal = ({ isOpen, onClose, cart, products, onPlaceOrder, isBlocke
                                 </button>
 
                                 <button 
-                                    disabled={isBlocked}
+                                    disabled={isBlocked || isOnboardingPending}
                                     onClick={() => setPaymentMethod('invoice')}
                                     className={`w-full p-6 rounded-3xl border-2 transition-all text-left flex items-center group disabled:opacity-50 ${paymentMethod === 'invoice' ? 'border-[#043003] bg-emerald-50/20' : 'border-gray-50 bg-[#F8FAFC] hover:border-gray-200'}`}
                                 >
@@ -359,7 +375,7 @@ const CheckoutModal = ({ isOpen, onClose, cart, products, onPlaceOrder, isBlocke
                         </button>
                         <button 
                             onClick={handleSubmit}
-                            disabled={isBlocked}
+                            disabled={isBlocked || isOnboardingPending}
                             className="flex-[2] py-5 bg-[#043003] text-white rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-2xl hover:bg-black transition-all active:scale-[0.98] flex items-center justify-center gap-3 disabled:opacity-50 disabled:grayscale"
                         >
                             <Check size={20}/> Place Order
@@ -440,6 +456,7 @@ export const Marketplace: React.FC<MarketplaceProps> = ({ user }) => {
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
   const [isAddProductModalOpen, setIsAddProductModalOpen] = useState(false);
   const [isBlocked, setIsBlocked] = useState(false);
+  const [isOnboardingPending, setIsOnboardingPending] = useState(false);
 
   const canAddProducts = user?.role === UserRole.ADMIN || user?.role === UserRole.WHOLESALER || user?.role === UserRole.FARMER;
 
@@ -448,6 +465,7 @@ export const Marketplace: React.FC<MarketplaceProps> = ({ user }) => {
         setProducts(mockService.getAllProducts());
         if (user) {
             setIsBlocked(mockService.hasOutstandingInvoices(user.id));
+            setIsOnboardingPending(!user.businessProfile?.isComplete);
         }
     };
     load();
@@ -473,7 +491,7 @@ export const Marketplace: React.FC<MarketplaceProps> = ({ user }) => {
 
   const handlePlaceOrder = (details: any) => {
       if (!user) return alert("Please sign in.");
-      if (isBlocked) return;
+      if (isBlocked || isOnboardingPending) return;
 
       const newOrder = mockService.createFullOrder(user.id, details.items, details.total);
       newOrder.logistics = {
@@ -551,6 +569,20 @@ export const Marketplace: React.FC<MarketplaceProps> = ({ user }) => {
             </div>
         )}
 
+        {isOnboardingPending && !isBlocked && (
+            <div className="bg-indigo-50 border-2 border-indigo-100 rounded-[2.5rem] p-8 flex items-center gap-6 shadow-sm animate-in slide-in-from-top-4">
+                <div className="bg-indigo-600 p-4 rounded-2xl text-white shadow-lg shadow-indigo-200 animate-pulse">
+                    <FileWarning size={32}/>
+                </div>
+                <div>
+                    <h3 className="font-black text-indigo-900 uppercase tracking-tight text-xl">Onboarding Pending</h3>
+                    <p className="text-indigo-700 font-medium leading-relaxed max-w-2xl">
+                        Ordering is currently restricted. Please complete your <span className="font-black underline cursor-pointer" onClick={() => navigate('/settings')}>Onboarding Documents</span> and wait for admin approval to begin trading.
+                    </p>
+                </div>
+            </div>
+        )}
+
         <div className="flex gap-3 overflow-x-auto no-scrollbar pb-2">
             {CATEGORIES.map(cat => (
                 <button 
@@ -580,6 +612,7 @@ export const Marketplace: React.FC<MarketplaceProps> = ({ user }) => {
             products={products}
             onPlaceOrder={handlePlaceOrder}
             isBlocked={isBlocked}
+            isOnboardingPending={isOnboardingPending}
         />
 
         <AddProductModal 

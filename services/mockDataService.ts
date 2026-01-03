@@ -17,26 +17,25 @@ export interface RoleIncentive {
   referrerBonusAmount: number;
 }
 
-export interface DeliAppItem {
-    id: string;
-    productName: string;
-    description: string;
-    price: number;
-    quantity: number;
-    vendorName: string;
-    imageUrl: string;
-    rating: number;
-    distance: string;
-    categories: string[];
-    isLive: boolean;
+export interface PortalInvite {
+  id: string;
+  code: string;
+  businessName: string;
+  firstName: string;
+  lastName: string;
+  role: UserRole;
+  email: string;
+  mobile: string;
+  status: 'Pending' | 'Claimed';
+  createdAt: string;
 }
 
 export const USERS: User[] = [
   { id: 'u1', name: 'Admin User', businessName: 'Platform Zero', role: UserRole.ADMIN, email: 'admin@pz.com' },
   { id: 'u2', name: 'Sarah Wholesaler', businessName: 'Fresh Wholesalers', role: UserRole.WHOLESALER, email: 'sarah@fresh.com', dashboardVersion: 'v2', activeSellingInterests: ['Tomatoes', 'Lettuce', 'Eggplants'], activeBuyingInterests: ['Potatoes', 'Apples'], businessProfile: { isComplete: true } as any },
   { id: 'u3', name: 'Bob Farmer', businessName: 'Green Valley Farms', role: UserRole.FARMER, email: 'bob@greenvalley.com', dashboardVersion: 'v2', activeSellingInterests: ['Potatoes', 'Apples'], activeBuyingInterests: [], businessProfile: { isComplete: true } as any },
-  { id: 'u4', name: 'Alice Consumer', businessName: 'The Morning Cafe', role: UserRole.CONSUMER, email: 'alice@cafe.com', phone: '0412 345 678', industry: 'Cafe', smsNotificationsEnabled: true },
-  { id: 'u5', name: 'Gary Grocer', businessName: 'Local Corner Grocers', role: UserRole.GROCERY, email: 'gary@grocer.com', phone: '0411 222 333', industry: 'Grocery Store', smsNotificationsEnabled: true },
+  { id: 'u4', name: 'Alice Consumer', businessName: 'The Morning Cafe', role: UserRole.CONSUMER, email: 'alice@cafe.com', phone: '0412 345 678', industry: 'Cafe', smsNotificationsEnabled: true, businessProfile: { isComplete: true } as any },
+  { id: 'u5', name: 'Gary Grocer', businessName: 'Local Corner Grocers', role: UserRole.GROCERY, email: 'gary@grocer.com', phone: '0411 222 333', industry: 'Grocery Store', smsNotificationsEnabled: true, businessProfile: { isComplete: true } as any },
   { id: 'rep1', name: 'Alex Johnson', businessName: 'Platform Zero', role: UserRole.PZ_REP, email: 'rep1@pz.com', commissionRate: 5.0 },
   { id: 'rep2', name: 'Sam Taylor', businessName: 'Platform Zero', role: UserRole.PZ_REP, email: 'rep2@pz.com', commissionRate: 5.0 },
 ];
@@ -48,6 +47,7 @@ export const INDUSTRIES: Industry[] = [
 
 class MockDataService {
   private users: User[] = [...USERS];
+  private portalInvites: PortalInvite[] = [];
   private industryIncentives: Record<Industry, number> = {
     'Cafe': 10, 'Restaurant': 12, 'Pub': 8, 'Hotel': 15, 'Sporting Club': 5,
     'RSL': 7, 'Casino': 20, 'Catering': 10, 'Grocery Store': 10, 'Airlines': 25,
@@ -114,6 +114,7 @@ class MockDataService {
           id: `o-delivered-1`, buyerId: 'c1', sellerId: 'u2', items: [{ productId: 'p4', quantityKg: 20, pricePerKg: 5.50 }], totalAmount: 110.00, status: 'Delivered', date: oneHourAgo, deliveredAt: oneHourAgo, paymentStatus: 'Unpaid', supplierPayoutStatus: 'Pending', source: 'Direct'
       });
       const eightyMinsAgo = new Date(Date.now() - 80 * 60 * 1000).toISOString();
+      // Fix line 118: Added missing colon after 'date' property name and before 'eightyMinsAgo' value
       this.orders.push({
           id: `o-delivered-2`, buyerId: 'c2', sellerId: 'u3', items: [{ productId: 'p1', quantityKg: 40, pricePerKg: 4.50 }], totalAmount: 180.00, status: 'Delivered', date: eightyMinsAgo, deliveredAt: eightyMinsAgo, paymentStatus: 'Unpaid', supplierPayoutStatus: 'Pending', source: 'Marketplace'
       });
@@ -143,6 +144,50 @@ class MockDataService {
           repStatus: 'ACTIONING',
           assignedRepId: 'rep1'
       });
+  }
+
+  createManualPortalInvite(data: { businessName: string, firstName: string, lastName: string, role: UserRole, email: string, mobile: string }): PortalInvite {
+    const code = Math.random().toString(36).substring(2, 8).toUpperCase();
+    const invite: PortalInvite = {
+        id: `inv-${Date.now()}`,
+        code,
+        businessName: data.businessName,
+        firstName: data.firstName,
+        lastName: data.lastName,
+        role: data.role,
+        email: data.email,
+        mobile: data.mobile,
+        status: 'Pending',
+        createdAt: new Date().toISOString()
+    };
+    this.portalInvites.push(invite);
+    
+    const userId = `u-invited-${Date.now()}`;
+    const newUser: User = {
+        id: userId,
+        name: `${data.firstName} ${data.lastName}`,
+        businessName: data.businessName,
+        role: data.role,
+        email: data.email,
+        phone: data.mobile,
+        businessProfile: { isComplete: false } // Force onboarding
+    };
+    this.users.push(newUser);
+
+    this.registrationRequests.push({
+        id: `req-${userId}`,
+        businessName: data.businessName,
+        name: `${data.firstName} ${data.lastName}`,
+        email: data.email,
+        requestedRole: data.role,
+        status: 'Pending',
+        submittedDate: new Date().toISOString(),
+        consumerData: {
+          mobile: data.mobile
+        }
+    });
+
+    return invite;
   }
 
   getTodayIssues() { return this.issues; }
@@ -313,58 +358,73 @@ class MockDataService {
       }
   }
   getRegistrationRequests() { return this.registrationRequests; }
-  approveRegistration(id: string) { const req = this.registrationRequests.find(r => r.id === id); if (req) req.status = 'Approved'; }
-  rejectRegistration(id: string) { const req = this.registrationRequests.find(r => r.id === id); if (req) req.status = 'Rejected'; }
+  approveRegistration(id: string) { 
+    const req = this.registrationRequests.find(r => r.id === id || r.id === `req-${id}`); 
+    if (req) req.status = 'Approved'; 
+  }
+  rejectRegistration(id: string) { 
+    const req = this.registrationRequests.find(r => r.id === id || r.id === `req-${id}`); 
+    if (req) req.status = 'Rejected'; 
+  }
   
   deleteUser(id: string) { this.users = this.users.filter(u => u.id !== id); }
 
   createManualInvite(data: any): RegistrationRequest {
     const req: RegistrationRequest = { id: `req-${Date.now()}`, businessName: data.businessName, name: data.name, email: data.email, requestedRole: data.role || UserRole.CONSUMER, status: 'Pending', submittedDate: new Date().toISOString(), industry: data.industry, consumerData: { location: data.location, mobile: data.mobile } };
     this.registrationRequests.push(req);
-    this.customers.push({ id: `c-${Date.now()}`, businessName: data.businessName, contactName: data.name, email: data.email, phone: data.mobile, category: 'Restaurant', industry: data.industry, connectionStatus: 'Pending Connection', connectedSupplierId: USERS[1].id, pzPaymentTermsDays: 7, supplierPaymentTermsDays: 14 });
     return req;
   }
-  deleteRegistrationRequest(id: string) { this.registrationRequests = this.registrationRequests.filter(r => r.id !== r.id); }
+  deleteRegistrationRequest(id: string) { this.registrationRequests = this.registrationRequests.filter(r => r.id !== id); }
   
   onboardNewBusiness(data: any): User {
-    const newUser: User = { id: data.id || `u-${Date.now()}`, name: data.name || 'New Lead', businessName: data.businessName, email: data.email, role: data.role || (data.type === 'Supplier' ? UserRole.WHOLESALER : UserRole.CONSUMER), industry: data.industry, phone: data.phone, businessProfile: { isComplete: false, abn: data.abn, businessLocation: data.address } as any };
+    const userId = data.id || `u-${Date.now()}`;
+    const newUser: User = { id: userId, name: data.name || 'New Lead', businessName: data.businessName, email: data.email, role: data.role || (data.type === 'Supplier' ? UserRole.WHOLESALER : UserRole.CONSUMER), industry: data.industry, phone: data.phone, businessProfile: { isComplete: false, abn: data.abn, businessLocation: data.address } as any };
     this.users.push(newUser);
     return newUser;
   }
 
-  // Final Profile submission from landing flow
   submitFinalizedOnboarding(userId: string, profile: BusinessProfile) {
     const user = this.users.find(u => u.id === userId);
     if (user) {
         user.businessProfile = { ...profile, isComplete: true };
         
-        // 1. PZ admin receives high-priority notification in "New Leads" queue context
-        this.addAppNotification('u1', 'New Lead: Trade Profile Finalized', `${user.businessName} has completed their trade identity. Review ABN/Logistics.`, 'APPLICATION');
-        
-        // 2. Add as a pending customer lead for reps
-        this.customers.push({
-            id: user.id,
-            businessName: user.businessName,
-            contactName: user.name,
-            email: user.email,
-            phone: user.phone,
-            category: 'New Lead',
-            industry: user.industry,
-            connectionStatus: 'Pending Connection',
-            pzPaymentTermsDays: 7,
-            supplierPaymentTermsDays: 14
-        });
+        const req = this.registrationRequests.find(r => r.id === `req-${userId}` || (r.email === user.email && r.status === 'Pending'));
+        if (req) {
+            req.status = 'Approved';
+        }
 
-        // 3. Simulated Email Connector
+        this.addAppNotification('u1', 'Trade Profile Finalized', `${user.businessName} has completed their trade identity.`, 'APPLICATION');
+        
+        if (!this.customers.some(c => c.id === user.id)) {
+            this.customers.push({
+                id: user.id,
+                businessName: user.businessName,
+                contactName: user.name,
+                email: user.email,
+                phone: user.phone,
+                category: user.industry || 'Market Partner',
+                industry: user.industry,
+                connectionStatus: 'Active',
+                pzMarkup: 15,
+                pzPaymentTermsDays: 7,
+                supplierPaymentTermsDays: 14
+            });
+        } else {
+            const cust = this.customers.find(c => c.id === user.id);
+            if (cust) {
+                cust.connectionStatus = 'Active';
+                cust.industry = user.industry;
+            }
+        }
+
         this.triggerEmailConnector(user.email, user.name);
     }
   }
 
   private triggerEmailConnector(email: string, name: string) {
     console.log(`%c[EMAIL CONNECTOR] Dispatching confirmation to ${email}...`, 'color: #10b981; font-weight: bold;');
-    // Simulate async email delivery
     setTimeout(() => {
-        console.log(`%c[EMAIL DELIVERED] Message: "Hi ${name}, Platform Zero will be in contact within 1 business day."`, 'color: #3b82f6; font-style: italic;');
+        console.log(`%c[EMAIL DELIVERED] Hi ${name}, Profile verified.`, 'color: #3b82f6; font-style: italic;');
     }, 1000);
   }
 
@@ -423,13 +483,12 @@ class MockDataService {
   submitConsumerSignup(data: any) { 
     const req: RegistrationRequest = { id: data.id || `reg-${Date.now()}`, businessName: data.businessName, name: data.name, email: data.email, requestedRole: data.requestedRole || UserRole.CONSUMER, industry: data.industry, status: 'Pending', submittedDate: new Date().toISOString(), consumerData: { location: data.location, weeklySpend: data.weeklySpend, orderFrequency: data.orderFrequency, invoiceFile: data.invoiceFile, mobile: data.mobile } }; 
     this.registrationRequests.push(req); 
-    this.onboardNewBusiness(data); // Also create a user record for onboarding
+    this.onboardNewBusiness(data); 
   }
   getProduct(id: string) { return this.products.find(p => p.id === id); }
   updateBusinessProfile(userId: string, profile: BusinessProfile) { 
     const user = this.users.find(u => u.id === userId); 
     if (user) {
-        user.businessProfile = profile;
         this.submitFinalizedOnboarding(userId, profile);
     }
   }

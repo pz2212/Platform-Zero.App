@@ -1,10 +1,9 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { RegistrationRequest, UserRole } from '../types';
 import { mockService } from '../services/mockDataService';
 import { triggerNativeSms, generateProductDeepLink } from '../services/smsService';
-/* Added Plus to imports from lucide-react */
+import { ManualInviteModal } from './ManualInviteModal';
 import { 
   Check, X, Clock, UserPlus, Link as LinkIcon, Copy, Building, 
   User, Mail, Smartphone, CheckCircle, Calculator, FileText, 
@@ -14,6 +13,7 @@ import {
 export const LoginRequests: React.FC = () => {
     const [requests, setRequests] = useState<RegistrationRequest[]>([]);
     const [approvedLinks, setApprovedLinks] = useState<Record<string, string>>({});
+    const [isManualInviteOpen, setIsManualInviteOpen] = useState(false);
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -28,7 +28,6 @@ export const LoginRequests: React.FC = () => {
 
     const handleApprove = (req: RegistrationRequest) => {
         mockService.approveRegistration(req.id);
-        // Generate a unique onboarding link for this user
         const setupLink = `${window.location.origin}/#/setup/${req.id.split('-').pop()}`;
         setApprovedLinks(prev => ({ ...prev, [req.id]: setupLink }));
         loadRequests();
@@ -177,12 +176,14 @@ export const LoginRequests: React.FC = () => {
                     <p className="text-gray-500 font-medium max-w-md">Instantly provision a profile and generate a setup link without waiting for an application.</p>
                 </div>
                 <button 
-                    onClick={() => navigate('/consumer-onboarding')}
+                    onClick={() => setIsManualInviteOpen(true)}
                     className="relative z-10 px-10 py-5 bg-[#0F172A] text-white rounded-2xl font-black text-[11px] uppercase tracking-[0.2em] shadow-2xl hover:bg-black transition-all flex items-center justify-center gap-3 active:scale-95"
                 >
                     <Plus size={20}/> Manual Provision
                 </button>
             </div>
+
+            <ManualInviteModal isOpen={isManualInviteOpen} onClose={() => setIsManualInviteOpen(false)} />
         </div>
     );
 };
