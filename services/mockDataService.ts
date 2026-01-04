@@ -48,6 +48,7 @@ export const INDUSTRIES: Industry[] = [
 class MockDataService {
   private users: User[] = [...USERS];
   private portalInvites: PortalInvite[] = [];
+  private registrationRequests: RegistrationRequest[] = [];
   private industryIncentives: Record<Industry, number> = {
     'Cafe': 10, 'Restaurant': 12, 'Pub': 8, 'Hotel': 15, 'Sporting Club': 5,
     'RSL': 7, 'Casino': 20, 'Catering': 10, 'Grocery Store': 10, 'Airlines': 25,
@@ -92,13 +93,44 @@ class MockDataService {
 
   private drivers: Driver[] = [];
   private packers: Packer[] = [];
-  private registrationRequests: RegistrationRequest[] = [];
   private supplierPriceRequests: SupplierPriceRequest[] = [];
   private chatMessages: ChatMessage[] = [];
 
   constructor() {
-      this.generateDemoOrders();
-      this.generateDemoIssues();
+      this.loadFromStorage();
+      if (this.orders.length === 0) {
+        this.generateDemoOrders();
+        this.generateDemoIssues();
+      }
+  }
+
+  private saveToStorage() {
+    const data = {
+        users: this.users,
+        portalInvites: this.portalInvites,
+        registrationRequests: this.registrationRequests,
+        roleIncentives: this.roleIncentives,
+        industryIncentives: this.industryIncentives,
+        orders: this.orders,
+        issues: this.issues,
+        customers: this.customers
+    };
+    localStorage.setItem('pz_mock_data', JSON.stringify(data));
+  }
+
+  private loadFromStorage() {
+    const saved = localStorage.getItem('pz_mock_data');
+    if (saved) {
+        const data = JSON.parse(saved);
+        this.users = data.users || this.users;
+        this.portalInvites = data.portalInvites || this.portalInvites;
+        this.registrationRequests = data.registrationRequests || this.registrationRequests;
+        this.roleIncentives = data.roleIncentives || this.roleIncentives;
+        this.industryIncentives = data.industryIncentives || this.industryIncentives;
+        this.orders = data.orders || this.orders;
+        this.issues = data.issues || this.issues;
+        this.customers = data.customers || this.customers;
+    }
   }
 
   private generateDemoOrders() {
@@ -139,15 +171,20 @@ class MockDataService {
   
   updateUserVersion(userId: string, version: 'v1' | 'v2') {
     const user = this.users.find(u => u.id === userId);
-    if (user) user.dashboardVersion = version;
+    if (user) {
+        user.dashboardVersion = version;
+        this.saveToStorage();
+    }
   }
 
   addEmployee(user: User) {
     this.users.push(user);
+    this.saveToStorage();
   }
 
   deleteUser(userId: string) {
     this.users = this.users.filter(u => u.id !== userId);
+    this.saveToStorage();
   }
 
   updateBusinessProfile(userId: string, profile: BusinessProfile) {
@@ -155,6 +192,7 @@ class MockDataService {
     if (user) {
         user.businessProfile = profile;
         user.businessName = profile.companyName || user.businessName;
+        this.saveToStorage();
     }
   }
 
@@ -164,6 +202,7 @@ class MockDataService {
       user.email = email;
       user.hasSetCredentials = true;
       user.isConfirmed = false; 
+      this.saveToStorage();
     }
   }
 
@@ -171,13 +210,17 @@ class MockDataService {
     const user = this.users.find(u => u.id === userId);
     if (user) {
       user.isConfirmed = true;
+      this.saveToStorage();
     }
   }
 
   // INVENTORY
   getAllProducts() { return this.products; }
   getProduct(id: string) { return this.products.find(p => p.id === id); }
-  addProduct(p: Product) { this.products.push(p); }
+  addProduct(p: Product) { 
+      this.products.push(p); 
+      this.saveToStorage();
+  }
   
   getInventory(userId: string) {
     return this.inventory.filter(i => i.ownerId === userId);
@@ -186,11 +229,15 @@ class MockDataService {
   
   addInventoryItem(item: InventoryItem) {
     this.inventory.push(item);
+    this.saveToStorage();
   }
 
   updateInventoryStatus(id: string, status: any) {
     const item = this.inventory.find(i => i.id === id);
-    if (item) item.status = status;
+    if (item) {
+        item.status = status;
+        this.saveToStorage();
+    }
   }
 
   generateLotId() {
@@ -202,12 +249,16 @@ class MockDataService {
       if (p) {
           p.defaultPricePerKg = price;
           p.unit = unit;
+          this.saveToStorage();
       }
   }
 
   updateProductPrice(id: string, price: number) {
       const p = this.products.find(prod => prod.id === id);
-      if (p) p.defaultPricePerKg = price;
+      if (p) {
+          p.defaultPricePerKg = price;
+          this.saveToStorage();
+      }
   }
 
   // ORDERS & DISPUTES
@@ -220,6 +271,7 @@ class MockDataService {
     if (order) {
         order.status = 'Confirmed';
         order.confirmedAt = new Date().toISOString();
+        this.saveToStorage();
     }
   }
 
@@ -229,6 +281,7 @@ class MockDataService {
           order.status = 'Ready for Delivery';
           order.packedAt = new Date().toISOString();
           order.logistics = { ...order.logistics, instructions: `Packed by ${packerName}` };
+          this.saveToStorage();
       }
   }
 
@@ -238,6 +291,7 @@ class MockDataService {
           order.status = 'Delivered';
           order.deliveredAt = new Date().toISOString();
           order.logistics = { ...order.logistics, driverName, deliveryPhoto: photo };
+          this.saveToStorage();
       }
   }
 
@@ -254,6 +308,7 @@ class MockDataService {
       this.issues.push(issue);
       const order = this.orders.find(o => o.id === orderId);
       if (order) order.issue = issue;
+      this.saveToStorage();
   }
 
   getTodayIssues() { return this.issues; }
@@ -263,7 +318,10 @@ class MockDataService {
   
   updateCustomerMarkup(id: string, markup: number) {
       const c = this.customers.find(cust => cust.id === id);
-      if (c) c.pzMarkup = markup;
+      if (c) {
+          c.pzMarkup = markup;
+          this.saveToStorage();
+      }
   }
 
   updateCustomerRep(id: string, repId: string) {
@@ -272,6 +330,7 @@ class MockDataService {
       if (c && rep) {
           c.assignedPzRepId = repId;
           c.assignedPzRepName = rep.name;
+          this.saveToStorage();
       }
   }
 
@@ -286,6 +345,7 @@ class MockDataService {
           submittedDate: new Date().toISOString()
       };
       this.registrationRequests.push(req);
+      this.saveToStorage();
       return req;
   }
 
@@ -298,6 +358,7 @@ class MockDataService {
           }
           
           if (!this.users.some(u => u.email.toLowerCase() === req.email.toLowerCase())) {
+              const signupBonus = this.roleIncentives[req.requestedRole]?.amount || 0;
               const newUser: User = {
                   id: req.id,
                   name: `${req.firstName} ${req.lastName}`,
@@ -307,7 +368,9 @@ class MockDataService {
                   role: req.requestedRole,
                   favoriteProductIds: [],
                   isConfirmed: true, 
-                  hasSetCredentials: true
+                  hasSetCredentials: true,
+                  // @ts-ignore - injecting bonus
+                  incentiveBalance: signupBonus
               };
               this.users.push(newUser);
 
@@ -326,19 +389,27 @@ class MockDataService {
                   });
               }
           }
+          this.saveToStorage();
       }
   }
 
   rejectRegistration(id: string) {
       const req = this.registrationRequests.find(r => r.id === id);
-      if (req) req.status = 'Rejected';
+      if (req) {
+          req.status = 'Rejected';
+          this.saveToStorage();
+      }
   }
 
   verifyCodeLogin(code: string): User | null {
+      // Refresh state from storage to catch items created in Admin tabs
+      this.loadFromStorage();
+      
       const req = this.registrationRequests.find(r => r.temporaryCode?.toUpperCase().trim() === code.toUpperCase().trim() && r.status === 'Approved');
       if (req) {
           let user = this.users.find(u => u.id === req.id);
           if (!user) {
+              const signupBonus = this.roleIncentives[req.requestedRole]?.amount || 0;
               user = {
                   id: req.id,
                   name: `${req.firstName} ${req.lastName}`,
@@ -348,9 +419,12 @@ class MockDataService {
                   role: req.requestedRole,
                   favoriteProductIds: [],
                   isConfirmed: false,
-                  hasSetCredentials: false
+                  hasSetCredentials: false,
+                  // @ts-ignore - injecting bonus
+                  incentiveBalance: signupBonus
               };
               this.users.push(user);
+              this.saveToStorage();
           }
           return user;
       }
@@ -387,6 +461,7 @@ class MockDataService {
     };
     this.registrationRequests.push(req);
 
+    const signupBonus = this.roleIncentives[data.role]?.amount || 0;
     const newUser: User = {
         id: invite.id,
         name: `${data.firstName} ${data.lastName}`,
@@ -396,7 +471,9 @@ class MockDataService {
         role: data.role,
         favoriteProductIds: [],
         isConfirmed: false,
-        hasSetCredentials: false
+        hasSetCredentials: false,
+        // @ts-ignore
+        incentiveBalance: signupBonus
     };
     this.users.push(newUser);
 
@@ -415,10 +492,12 @@ class MockDataService {
         });
     }
 
+    this.saveToStorage();
     return invite;
   }
 
   onboardNewBusiness(data: any) {
+    const signupBonus = this.roleIncentives[data.role]?.amount || 0;
     const newUser: User = {
       id: `u-${Date.now()}`,
       name: data.businessName,
@@ -427,9 +506,12 @@ class MockDataService {
       role: data.role,
       favoriteProductIds: [],
       isConfirmed: true,
-      hasSetCredentials: true
+      hasSetCredentials: true,
+      // @ts-ignore
+      incentiveBalance: signupBonus
     };
     this.users.push(newUser);
+    this.saveToStorage();
     return newUser;
   }
 
@@ -445,15 +527,20 @@ class MockDataService {
           timestamp: new Date().toISOString(),
           isRead: false
       });
+      this.saveToStorage();
   }
 
   markNotificationAsRead(id: string) {
       const n = this.notifications.find(notif => notif.id === id);
-      if (n) n.isRead = true;
+      if (n) {
+          n.isRead = true;
+          this.saveToStorage();
+      }
   }
 
   markAllNotificationsRead(userId: string) {
       this.notifications.filter(n => n.userId === userId).forEach(n => n.isRead = true);
+      this.saveToStorage();
   }
 
   // CHAT
@@ -467,6 +554,7 @@ class MockDataService {
           senderId, receiverId, text,
           timestamp: new Date().toISOString()
       });
+      this.saveToStorage();
   }
 
   // SETTLEMENT LOGIC
@@ -475,6 +563,7 @@ class MockDataService {
       if (o) {
           o.paymentStatus = 'Paid';
           o.customerReceiptUrl = receiptUrl;
+          this.saveToStorage();
       }
   }
 
@@ -483,6 +572,7 @@ class MockDataService {
       if (o) {
           o.supplierPayoutStatus = 'Remitted';
           o.supplierReceiptUrl = receiptUrl;
+          this.saveToStorage();
       }
   }
 
@@ -496,10 +586,12 @@ class MockDataService {
   
   updateRoleIncentive(role: string, data: RoleIncentive) {
       this.roleIncentives[role] = data;
+      this.saveToStorage();
   }
 
   updateIndustryIncentive(ind: Industry, val: number) {
       this.industryIncentives[ind] = val;
+      this.saveToStorage();
   }
 
   updateUserSmsPreference(id: string, enabled: boolean, phone: string) {
@@ -507,6 +599,7 @@ class MockDataService {
       if (u) {
           u.smsNotificationsEnabled = enabled;
           u.phone = phone;
+          this.saveToStorage();
       }
   }
 
@@ -515,6 +608,7 @@ class MockDataService {
       if (u) {
           u.activeSellingInterests = selling;
           u.activeBuyingInterests = buying;
+          this.saveToStorage();
       }
   }
 
@@ -528,6 +622,7 @@ class MockDataService {
       } else {
           u.favoriteProductIds.push(productId);
       }
+      this.saveToStorage();
   }
 
   // HELPER FOR SEARCHING
@@ -544,6 +639,7 @@ class MockDataService {
 
   createSupplierPriceRequest(req: SupplierPriceRequest) {
       this.supplierPriceRequests.push(req);
+      this.saveToStorage();
   }
 
   updateSupplierPriceRequestResponse(reqId: string, items: SupplierPriceRequestItem[]) {
@@ -551,6 +647,7 @@ class MockDataService {
       if (req) {
           req.items = items;
           req.status = 'SUBMITTED';
+          this.saveToStorage();
       }
   }
 
@@ -574,6 +671,7 @@ class MockDataService {
               supplierPaymentTermsDays: 14
           };
           this.customers.push(newCust);
+          this.saveToStorage();
           return newCust;
       }
       return null;
@@ -581,14 +679,23 @@ class MockDataService {
 
   sendOnboardingComms(id: string) {
       const c = this.customers.find(cust => cust.id === id);
-      if (c) c.connectionStatus = 'Pricing Pending';
+      if (c) {
+          c.connectionStatus = 'Pricing Pending';
+          this.saveToStorage();
+      }
   }
 
   // DRIVERS & PACKERS
   getDrivers(whId: string) { return this.drivers.filter(d => d.wholesalerId === whId); }
-  addDriver(d: Driver) { this.drivers.push(d); }
+  addDriver(d: Driver) { 
+      this.drivers.push(d); 
+      this.saveToStorage();
+  }
   getPackers(whId: string) { return this.packers.filter(p => p.wholesalerId === whId); }
-  addPacker(p: Packer) { this.packers.push(p); }
+  addPacker(p: Packer) { 
+      this.packers.push(p); 
+      this.saveToStorage();
+  }
 
   getDriverOrders(driverId: string) {
       const driver = this.drivers.find(d => d.id === driverId);
@@ -640,6 +747,7 @@ class MockDataService {
           source: 'Marketplace'
       };
       this.orders.push(order);
+      this.saveToStorage();
       return order;
   }
 
@@ -657,6 +765,7 @@ class MockDataService {
           source: 'Marketplace'
       };
       this.orders.push(order);
+      this.saveToStorage();
       return order;
   }
 

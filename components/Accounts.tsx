@@ -54,6 +54,9 @@ const ConsumerAccounts: React.FC<AccountsProps> = ({ user }) => {
         { name: 'Deli / Pantry', value: 10, color: '#F59E0B' },
     ];
 
+    // @ts-ignore - dynamic bonus fromGrowth Hub
+    const incentiveBalance = user.incentiveBalance || 0;
+
     return (
         <div className="space-y-8 animate-in fade-in duration-500 pb-20">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -104,10 +107,10 @@ const ConsumerAccounts: React.FC<AccountsProps> = ({ user }) => {
                     <div className="absolute top-0 right-0 p-8 opacity-10 transform -rotate-12 scale-150 pointer-events-none group-hover:rotate-0 transition-transform duration-700"><Wallet size={120}/></div>
                     <div>
                         <p className="text-[10px] font-black text-emerald-100 uppercase tracking-[0.3em] mb-4">PZ Credits</p>
-                        <h3 className="text-4xl font-black tracking-tighter">$428.50</h3>
+                        <h3 className="text-4xl font-black tracking-tighter">${incentiveBalance.toLocaleString(undefined, {minimumFractionDigits: 2})}</h3>
                     </div>
                     <button className="mt-8 py-3 bg-white/10 hover:bg-white/20 border border-white/20 rounded-2xl font-black text-[9px] uppercase tracking-[0.2em] transition-all">
-                        Earn More Credits
+                        {incentiveBalance > 0 ? 'Activate Credits' : 'Earn More Credits'}
                     </button>
                 </div>
             </div>
@@ -464,7 +467,7 @@ export const Accounts: React.FC<AccountsProps> = ({ user }) => {
                             {currentList.map(order => (
                                 <tr key={order.id} className="hover:bg-gray-50/80 transition-all group">
                                     <td className="px-6 py-6 text-sm font-bold text-gray-500">{new Date(order.date).toLocaleDateString()}</td>
-                                    <td className="px-6 py-6 font-mono font-black text-xs text-indigo-500 uppercase tracking-tighter">INV-{order.id.split('-').pop()}</td>
+                                    <td className="px-6 py-6 font-mono font-black text-xs text-indigo-600 uppercase tracking-tighter">INV-{order.id.split('-').pop()}</td>
                                     <td className="px-6 py-6">
                                         <div className="flex items-center gap-3">
                                             <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center text-gray-400 text-[10px] font-black">{getCounterpartyName(order, activeTab).charAt(0)}</div>
