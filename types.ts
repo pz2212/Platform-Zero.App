@@ -82,7 +82,7 @@ export interface User {
   commissionRate?: number;
   smsNotificationsEnabled?: boolean;
   favoriteProductIds?: string[];
-  // Onboarding status
+  // New Onboarding Logic
   isConfirmed?: boolean;
   hasSetCredentials?: boolean;
 }

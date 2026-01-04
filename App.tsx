@@ -178,20 +178,20 @@ const AppLayout = ({ children, user, onLogout }: any) => {
   
   return (
     <div className="flex min-h-screen bg-white">
-      {/* Trading Block Indicator */}
-      {!user.isConfirmed && (
+      {/* Trading Block Indicator Overlay for unconfirmed new users */}
+      {user && !user.isConfirmed && (
         <div className="fixed inset-0 z-[500] bg-black/40 backdrop-blur-md flex items-center justify-center p-6 text-center">
             <div className="bg-white rounded-[3rem] p-10 max-w-md shadow-2xl animate-in zoom-in-95 duration-300">
                 <div className="w-20 h-20 bg-indigo-50 text-indigo-600 rounded-3xl flex items-center justify-center mx-auto mb-8 shadow-inner-sm">
                     <Mail size={40} />
                 </div>
-                <h2 className="text-2xl font-black text-gray-900 uppercase tracking-tight mb-3">Action Required</h2>
-                <p className="text-gray-500 font-medium leading-relaxed mb-8">Your profile needs final verification before you can start trading. We've sent a <span className="font-black">confirmation receipt</span> to your new business email.</p>
+                <h2 className="text-2xl font-black text-gray-900 uppercase tracking-tight mb-3">Check Your Inbox</h2>
+                <p className="text-gray-500 font-medium leading-relaxed mb-8">We've sent a <span className="font-black text-gray-900">confirmation receipt</span> to <span className="font-bold text-indigo-600">{user.email}</span>. Please click the link in the email to secure your profile and enable trading.</p>
                 <button 
                   onClick={() => mockService.confirmUser(user.id)}
                   className="w-full py-5 bg-indigo-600 text-white rounded-2xl font-black uppercase tracking-[0.2em] shadow-xl hover:bg-black transition-all active:scale-95 flex items-center justify-center gap-3"
                 >
-                    Confirm via Email (Simulated)
+                    Confirm Profile (Simulated)
                 </button>
             </div>
         </div>
@@ -231,11 +231,11 @@ const AppLayout = ({ children, user, onLogout }: any) => {
             <div className="flex items-center gap-2 md:gap-4 relative">
                 <div className="flex items-center gap-3">
                   <div className="text-right hidden sm:block">
-                    <p className="text-xs font-black text-gray-900 leading-none mb-1 uppercase">{user.name}</p>
-                    <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest leading-none">{user.role}</p>
+                    <p className="text-xs font-black text-gray-900 leading-none mb-1 uppercase">{user?.name}</p>
+                    <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest leading-none">{user?.role}</p>
                   </div>
                   <div className="w-10 h-10 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-700 font-black shadow-sm shrink-0">
-                    {user.name.charAt(0)}
+                    {user?.name.charAt(0)}
                   </div>
                 </div>
 
@@ -257,7 +257,7 @@ const AppLayout = ({ children, user, onLogout }: any) => {
                     <div className="absolute right-0 top-14 w-[260px] bg-white rounded-3xl shadow-[0_25px_50px_-12px_rgba(0,0,0,0.25)] border border-gray-100 py-4 px-3 z-[60] animate-in zoom-in-95 slide-in-from-top-2 duration-200">
                         <div className="px-4 py-2 mb-4 border-b border-gray-50">
                             <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.2em] mb-0.5">Account</p>
-                            <p className="font-black text-gray-900 uppercase truncate text-xs">{user.businessName}</p>
+                            <p className="font-black text-gray-900 uppercase truncate text-xs">{user?.businessName}</p>
                         </div>
                         
                         <div className="space-y-1">
@@ -317,7 +317,6 @@ const App = () => {
 
   const handleSetupComplete = () => {
       setShowSetupModal(false);
-      // Trigger confirmation overlay state (already handled by !user.isConfirmed in AppLayout)
   };
 
   const wrapLayout = (element: React.ReactElement) => (

@@ -163,7 +163,7 @@ class MockDataService {
     if (user) {
       user.email = email;
       user.hasSetCredentials = true;
-      user.isConfirmed = false; // Reset confirmation if credentials set
+      user.isConfirmed = false; 
     }
   }
 
@@ -293,12 +293,10 @@ class MockDataService {
       const req = this.registrationRequests.find(r => r.id === id);
       if (req) {
           req.status = 'Approved';
-          // Generate temporary code if not already present
           if (!req.temporaryCode) {
               req.temporaryCode = Math.random().toString(36).substring(2, 8).toUpperCase();
           }
           
-          // Create the account if it doesn't exist
           if (!this.users.some(u => u.email.toLowerCase() === req.email.toLowerCase())) {
               const newUser: User = {
                   id: req.id,
@@ -308,12 +306,11 @@ class MockDataService {
                   phone: req.mobile,
                   role: req.requestedRole,
                   favoriteProductIds: [],
-                  isConfirmed: true, // Auto-confirm legacy flow
+                  isConfirmed: true, 
                   hasSetCredentials: true
               };
               this.users.push(newUser);
 
-              // If buyer, create customer profile
               if (req.requestedRole === UserRole.CONSUMER || req.requestedRole === UserRole.GROCERY) {
                   this.customers.push({
                       id: newUser.id,
@@ -338,10 +335,8 @@ class MockDataService {
   }
 
   verifyCodeLogin(code: string): User | null {
-      // Find a registration request with this code
-      const req = this.registrationRequests.find(r => r.temporaryCode === code.toUpperCase().trim() && r.status === 'Approved');
+      const req = this.registrationRequests.find(r => r.temporaryCode?.toUpperCase().trim() === code.toUpperCase().trim() && r.status === 'Approved');
       if (req) {
-          // Find or create the user
           let user = this.users.find(u => u.id === req.id);
           if (!user) {
               user = {
@@ -378,7 +373,6 @@ class MockDataService {
     };
     this.portalInvites.push(invite);
 
-    // Manual provisioning should be pre-approved for immediate login
     const req: RegistrationRequest = {
         id: invite.id,
         businessName: data.businessName,
@@ -393,7 +387,6 @@ class MockDataService {
     };
     this.registrationRequests.push(req);
 
-    // Create corresponding user immediately so verifyCodeLogin finds them
     const newUser: User = {
         id: invite.id,
         name: `${data.firstName} ${data.lastName}`,
@@ -407,7 +400,6 @@ class MockDataService {
     };
     this.users.push(newUser);
 
-    // If buyer, create customer profile
     if (data.role === UserRole.CONSUMER || data.role === UserRole.GROCERY) {
         this.customers.push({
             id: newUser.id,
@@ -532,7 +524,6 @@ class MockDataService {
       if (!u.favoriteProductIds) u.favoriteProductIds = [];
       
       if (u.favoriteProductIds.includes(productId)) {
-          // Fix: check typing
           u.favoriteProductIds = u.favoriteProductIds.filter(id => id !== productId);
       } else {
           u.favoriteProductIds.push(productId);
@@ -569,7 +560,6 @@ class MockDataService {
           req.status = 'WON';
           const supplier = this.users.find(u => u.id === req.supplierId);
           
-          // Create the active customer
           const newCust: Customer = {
               id: `c-win-${Date.now()}`,
               businessName: req.customerContext,
@@ -640,7 +630,7 @@ class MockDataService {
       const order: Order = {
           id: `o-${Date.now()}`,
           buyerId,
-          sellerId: 'u2', // Default to Sarah for demo
+          sellerId: 'u2', 
           items,
           totalAmount: total,
           status: 'Pending',
