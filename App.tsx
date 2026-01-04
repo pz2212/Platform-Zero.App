@@ -38,7 +38,8 @@ import {
   ShoppingBag, ShieldCheck, TrendingUp, Target, Plus, ChevronUp, Layers, 
   Sparkles, User as UserIcon, Building, ChevronRight,
   Sprout, Globe, Users2, Circle, LogIn, ArrowRight, Menu, Search, Calculator, BarChart3,
-  Wallet, FileText, CreditCard, Activity, Briefcase, Store, TrendingDown, Gavel, Leaf, BarChart4, Loader2, Mail
+  Wallet, FileText, CreditCard, Activity, Briefcase, Store, TrendingDown, Gavel, Leaf, BarChart4, Loader2, Mail,
+  Key
 } from 'lucide-react';
 
 const SidebarLink = ({ to, icon: Icon, label, active, onClick, badge = 0, isSubItem = false }: any) => (
@@ -177,6 +178,25 @@ const AppLayout = ({ children, user, onLogout }: any) => {
   
   return (
     <div className="flex min-h-screen bg-white">
+      {/* Trading Block Indicator */}
+      {!user.isConfirmed && (
+        <div className="fixed inset-0 z-[500] bg-black/40 backdrop-blur-md flex items-center justify-center p-6 text-center">
+            <div className="bg-white rounded-[3rem] p-10 max-w-md shadow-2xl animate-in zoom-in-95 duration-300">
+                <div className="w-20 h-20 bg-indigo-50 text-indigo-600 rounded-3xl flex items-center justify-center mx-auto mb-8 shadow-inner-sm">
+                    <Mail size={40} />
+                </div>
+                <h2 className="text-2xl font-black text-gray-900 uppercase tracking-tight mb-3">Action Required</h2>
+                <p className="text-gray-500 font-medium leading-relaxed mb-8">Your profile needs final verification before you can start trading. We've sent a <span className="font-black">confirmation receipt</span> to your new business email.</p>
+                <button 
+                  onClick={() => mockService.confirmUser(user.id)}
+                  className="w-full py-5 bg-indigo-600 text-white rounded-2xl font-black uppercase tracking-[0.2em] shadow-xl hover:bg-black transition-all active:scale-95 flex items-center justify-center gap-3"
+                >
+                    Confirm via Email (Simulated)
+                </button>
+            </div>
+        </div>
+      )}
+
       <aside className="hidden md:flex flex-col w-64 bg-white border-r border-gray-100 fixed inset-y-0 z-30">
         <div className="p-8 flex items-center gap-3">
           <div className="w-8 h-8 bg-[#043003] rounded-lg flex items-center justify-center text-white font-bold text-lg">P</div>
@@ -268,7 +288,7 @@ const AppLayout = ({ children, user, onLogout }: any) => {
 const App = () => {
   const [user, setUser] = useState<User | null>(null);
   const [showAuthModal, setShowAuthModal] = useState(false);
-  const [authStep, setAuthStep] = useState<'category' | 'credentials'>('category');
+  const [showSetupModal, setShowSetupModal] = useState(false);
 
   // Trigger AuthModal if #login is detected in the URL
   useEffect(() => {
@@ -287,23 +307,36 @@ const App = () => {
     if (foundUser) { setUser(foundUser); setShowAuthModal(false); } else { alert("Account not found."); }
   };
 
-  const handleCodeLogin = (user: User) => {
-    setUser(user);
+  const handleCodeLogin = (loggedUser: User) => {
+    setUser(loggedUser);
     setShowAuthModal(false);
+    if (!loggedUser.hasSetCredentials) {
+        setShowSetupModal(true);
+    }
+  };
+
+  const handleSetupComplete = () => {
+      setShowSetupModal(false);
+      // Trigger confirmation overlay state (already handled by !user.isConfirmed in AppLayout)
   };
 
   const wrapLayout = (element: React.ReactElement) => (
     <Router>
         <Routes>
-            <Route path="/l/:itemId" element={<SharedProductLanding user={user} onLogin={() => { setAuthStep('category'); setShowAuthModal(true); }} />} />
+            <Route path="/l/:itemId" element={<SharedProductLanding user={user} onLogin={() => setShowAuthModal(true)} />} />
             <Route path="/*" element={
                 user ? (
                     <AppLayout user={user} onLogout={() => setUser(null)}>
                         {element}
+                        <FirstTimeSetupModal 
+                            isOpen={showSetupModal}
+                            user={user}
+                            onComplete={handleSetupComplete}
+                        />
                     </AppLayout>
                 ) : (
                     <>
-                        <ConsumerLanding onLogin={() => { setAuthStep('category'); setShowAuthModal(true); }} />
+                        <ConsumerLanding onLogin={() => setShowAuthModal(true)} />
                         <AuthModal 
                             isOpen={showAuthModal} 
                             onClose={() => { 
@@ -351,8 +384,74 @@ const App = () => {
   );
 };
 
+const FirstTimeSetupModal = ({ isOpen, user, onComplete }: any) => {
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [isSaving, setIsSaving] = useState(false);
+
+    if (!isOpen) return null;
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setIsSaving(true);
+        await new Promise(r => setTimeout(r, 1200));
+        mockService.updateUserCredentials(user.id, email);
+        setIsSaving(false);
+        onComplete();
+    };
+
+    return (
+        <div className="fixed inset-0 z-[600] flex items-center justify-center bg-[#0F172A]/95 backdrop-blur-xl p-4">
+            <div className="bg-white rounded-[3rem] shadow-2xl w-full max-w-lg overflow-hidden animate-in zoom-in-95 duration-300">
+                <div className="p-10 border-b border-gray-100 bg-gray-50/50 flex flex-col items-center text-center">
+                    <div className="w-16 h-16 bg-indigo-600 rounded-[1.5rem] flex items-center justify-center text-white mb-6 shadow-xl shadow-indigo-200">
+                        <Lock size={28}/>
+                    </div>
+                    <h2 className="text-2xl font-black text-gray-900 uppercase tracking-tight leading-none mb-2">Secure Your Portal</h2>
+                    <p className="text-sm text-gray-500 font-medium">Assign a permanent email and password to replace your one-time access code.</p>
+                </div>
+                <form onSubmit={handleSubmit} className="p-10 space-y-6">
+                    <div className="space-y-4">
+                        <div className="relative group">
+                            <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300 group-focus-within:text-indigo-500 transition-colors" size={18}/>
+                            <input 
+                                required 
+                                type="email" 
+                                placeholder="Permanent Business Email"
+                                className="w-full pl-12 pr-4 py-4 bg-gray-50 border border-gray-100 rounded-2xl font-bold text-gray-900 outline-none focus:ring-4 focus:ring-indigo-50/10 focus:bg-white transition-all"
+                                value={email}
+                                onChange={e => setEmail(e.target.value)}
+                            />
+                        </div>
+                        <div className="relative group">
+                            <Key className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300 group-focus-within:text-indigo-500 transition-colors" size={18}/>
+                            <input 
+                                required 
+                                type="password" 
+                                placeholder="Create Secure Password"
+                                className="w-full pl-12 pr-4 py-4 bg-gray-50 border border-gray-100 rounded-2xl font-bold text-gray-900 outline-none focus:ring-4 focus:ring-indigo-50/10 focus:bg-white transition-all"
+                                value={password}
+                                onChange={e => setPassword(e.target.value)}
+                            />
+                        </div>
+                    </div>
+                    <button 
+                        type="submit"
+                        disabled={isSaving || !email || !password}
+                        className="w-full py-5 bg-[#043003] text-white rounded-2xl font-black uppercase tracking-[0.2em] shadow-xl hover:bg-black transition-all flex items-center justify-center gap-3 disabled:opacity-50"
+                    >
+                        {isSaving ? <Loader2 className="animate-spin" size={24}/> : <><ShieldCheck size={20}/> Finalize Credentials</>}
+                    </button>
+                    <p className="text-[10px] text-center text-gray-400 font-bold uppercase tracking-widest leading-relaxed">
+                        By setting credentials, you agree to our Terms of Trade & Digital Platform Agreements.
+                    </p>
+                </form>
+            </div>
+        </div>
+    );
+};
+
 const AuthModal = ({ isOpen, onClose, onAutoLogin, onCodeLogin }: any) => {
-    const [loginEmail, setLoginEmail] = useState('');
     const [loginCode, setLoginCode] = useState('');
     const [isLoggingIn, setIsLoggingIn] = useState(false);
 
@@ -363,13 +462,12 @@ const AuthModal = ({ isOpen, onClose, onAutoLogin, onCodeLogin }: any) => {
         setIsLoggingIn(true);
         await new Promise(r => setTimeout(r, 1000));
         // Normalize input
-        const cleanEmail = loginEmail.trim().toLowerCase();
         const cleanCode = loginCode.trim().toUpperCase();
-        const user = mockService.verifyCodeLogin(cleanEmail, cleanCode);
+        const user = mockService.verifyCodeLogin(cleanCode);
         if (user) {
             onCodeLogin(user);
         } else {
-            alert("Invalid email or access code. Please check your credentials and try again.");
+            alert("Invalid access code. Please check your text message and try again.");
         }
         setIsLoggingIn(false);
     };
@@ -392,42 +490,32 @@ const AuthModal = ({ isOpen, onClose, onAutoLogin, onCodeLogin }: any) => {
                 
                 <div className="flex-1 overflow-y-auto custom-scrollbar p-10 space-y-10">
                     {/* Access Code Login Form */}
-                    <form onSubmit={handleCodeSubmit} className="space-y-6 animate-in fade-in slide-in-from-top-2 duration-500">
-                        <div className="flex items-center gap-3 text-indigo-600 mb-6">
-                            <Lock size={20}/>
-                            <h3 className="font-black uppercase text-sm tracking-widest">Sign in with Access Code</h3>
+                    <form onSubmit={handleCodeSubmit} className="space-y-8 animate-in fade-in slide-in-from-top-2 duration-500 text-center">
+                        <div className="w-16 h-16 bg-indigo-50 text-indigo-600 rounded-3xl flex items-center justify-center mx-auto shadow-inner-sm">
+                            <ShieldCheck size={32} />
+                        </div>
+                        <div>
+                            <h3 className="font-black uppercase text-base tracking-widest text-gray-900">Enter Access Code</h3>
+                            <p className="text-xs text-gray-400 font-medium mt-1">Found in your PZ invitation text message</p>
                         </div>
                         
-                        <div className="space-y-4">
-                            <div className="relative">
-                                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18}/>
-                                <input 
-                                    required
-                                    type="email"
-                                    placeholder="Business Email"
-                                    className="w-full pl-12 pr-4 py-4 bg-gray-50 border border-gray-100 rounded-2xl font-bold text-gray-900 outline-none focus:ring-4 focus:ring-indigo-50/5 focus:bg-white transition-all"
-                                    value={loginEmail}
-                                    onChange={e => setLoginEmail(e.target.value)}
-                                />
-                            </div>
-                            <div className="relative">
-                                <ShieldCheck className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18}/>
-                                <input 
-                                    required
-                                    placeholder="Access Code"
-                                    className="w-full pl-12 pr-4 py-4 bg-gray-50 border border-gray-100 rounded-2xl font-bold text-gray-900 outline-none focus:ring-4 focus:ring-indigo-50/5 focus:bg-white transition-all uppercase tracking-widest"
-                                    value={loginCode}
-                                    onChange={e => setLoginCode(e.target.value)}
-                                />
-                            </div>
+                        <div className="relative group">
+                            <input 
+                                required
+                                autoFocus
+                                placeholder="••••••"
+                                className="w-full text-center py-6 bg-gray-50 border-2 border-gray-100 rounded-[2rem] font-black text-4xl text-gray-900 outline-none focus:ring-8 focus:ring-indigo-50/50 focus:bg-white focus:border-indigo-600 transition-all uppercase tracking-[0.4em] placeholder-gray-200"
+                                value={loginCode}
+                                onChange={e => setLoginCode(e.target.value)}
+                            />
                         </div>
 
                         <button 
                             type="submit"
-                            disabled={isLoggingIn}
-                            className="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-xl shadow-indigo-100 transition-all active:scale-95 flex items-center justify-center gap-2"
+                            disabled={isLoggingIn || !loginCode}
+                            className="w-full py-5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-xl shadow-indigo-100 transition-all active:scale-95 flex items-center justify-center gap-3 disabled:opacity-50"
                         >
-                            {isLoggingIn ? <Loader2 className="animate-spin" size={20}/> : <><LogIn size={20}/> Unlock Portal</>}
+                            {isLoggingIn ? <Loader2 className="animate-spin" size={24}/> : <><LogIn size={20}/> Unlock Portal</>}
                         </button>
                     </form>
 

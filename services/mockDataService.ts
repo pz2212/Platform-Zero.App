@@ -31,13 +31,13 @@ export interface PortalInvite {
 }
 
 export const USERS: User[] = [
-  { id: 'u1', name: 'Admin User', businessName: 'Platform Zero', role: UserRole.ADMIN, email: 'admin@pz.com', favoriteProductIds: [] },
-  { id: 'u2', name: 'Sarah Wholesaler', businessName: 'Fresh Wholesalers', role: UserRole.WHOLESALER, email: 'sarah@fresh.com', dashboardVersion: 'v2', activeSellingInterests: ['Tomatoes', 'Lettuce', 'Eggplants'], activeBuyingInterests: ['Potatoes', 'Apples'], businessProfile: { isComplete: true } as any, favoriteProductIds: [] },
-  { id: 'u3', name: 'Bob Farmer', businessName: 'Green Valley Farms', role: UserRole.FARMER, email: 'bob@greenvalley.com', dashboardVersion: 'v2', activeSellingInterests: ['Potatoes', 'Apples'], activeBuyingInterests: [], businessProfile: { isComplete: true } as any, favoriteProductIds: [] },
-  { id: 'u4', name: 'Alice Consumer', businessName: 'The Morning Cafe', role: UserRole.CONSUMER, email: 'alice@cafe.com', phone: '0412 345 678', industry: 'Cafe', smsNotificationsEnabled: true, businessProfile: { isComplete: true } as any, favoriteProductIds: ['p1', 'p2', 'p-banana-cav'] },
-  { id: 'u5', name: 'Gary Grocer', businessName: 'Local Corner Grocers', role: UserRole.GROCERY, email: 'gary@grocer.com', phone: '0411 222 333', industry: 'Grocery Store', smsNotificationsEnabled: true, businessProfile: { isComplete: true } as any, favoriteProductIds: [] },
-  { id: 'rep1', name: 'Alex Johnson', businessName: 'Platform Zero', role: UserRole.PZ_REP, email: 'rep1@pz.com', commissionRate: 5.0 },
-  { id: 'rep2', name: 'Sam Taylor', businessName: 'Platform Zero', role: UserRole.PZ_REP, email: 'rep2@pz.com', commissionRate: 5.0 },
+  { id: 'u1', name: 'Admin User', businessName: 'Platform Zero', role: UserRole.ADMIN, email: 'admin@pz.com', favoriteProductIds: [], isConfirmed: true, hasSetCredentials: true },
+  { id: 'u2', name: 'Sarah Wholesaler', businessName: 'Fresh Wholesalers', role: UserRole.WHOLESALER, email: 'sarah@fresh.com', dashboardVersion: 'v2', activeSellingInterests: ['Tomatoes', 'Lettuce', 'Eggplants'], activeBuyingInterests: ['Potatoes', 'Apples'], businessProfile: { isComplete: true } as any, favoriteProductIds: [], isConfirmed: true, hasSetCredentials: true },
+  { id: 'u3', name: 'Bob Farmer', businessName: 'Green Valley Farms', role: UserRole.FARMER, email: 'bob@greenvalley.com', dashboardVersion: 'v2', activeSellingInterests: ['Potatoes', 'Apples'], activeBuyingInterests: [], businessProfile: { isComplete: true } as any, favoriteProductIds: [], isConfirmed: true, hasSetCredentials: true },
+  { id: 'u4', name: 'Alice Consumer', businessName: 'The Morning Cafe', role: UserRole.CONSUMER, email: 'alice@cafe.com', phone: '0412 345 678', industry: 'Cafe', smsNotificationsEnabled: true, businessProfile: { isComplete: true } as any, favoriteProductIds: ['p1', 'p2', 'p-banana-cav'], isConfirmed: true, hasSetCredentials: true },
+  { id: 'u5', name: 'Gary Grocer', businessName: 'Local Corner Grocers', role: UserRole.GROCERY, email: 'gary@grocer.com', phone: '0411 222 333', industry: 'Grocery Store', smsNotificationsEnabled: true, businessProfile: { isComplete: true } as any, favoriteProductIds: [], isConfirmed: true, hasSetCredentials: true },
+  { id: 'rep1', name: 'Alex Johnson', businessName: 'Platform Zero', role: UserRole.PZ_REP, email: 'rep1@pz.com', commissionRate: 5.0, isConfirmed: true, hasSetCredentials: true },
+  { id: 'rep2', name: 'Sam Taylor', businessName: 'Platform Zero', role: UserRole.PZ_REP, email: 'rep2@pz.com', commissionRate: 5.0, isConfirmed: true, hasSetCredentials: true },
 ];
 
 export const INDUSTRIES: Industry[] = [
@@ -155,6 +155,22 @@ class MockDataService {
     if (user) {
         user.businessProfile = profile;
         user.businessName = profile.companyName || user.businessName;
+    }
+  }
+
+  updateUserCredentials(userId: string, email: string) {
+    const user = this.users.find(u => u.id === userId);
+    if (user) {
+      user.email = email;
+      user.hasSetCredentials = true;
+      user.isConfirmed = false; // Reset confirmation if credentials set
+    }
+  }
+
+  confirmUser(userId: string) {
+    const user = this.users.find(u => u.id === userId);
+    if (user) {
+      user.isConfirmed = true;
     }
   }
 
@@ -291,7 +307,9 @@ class MockDataService {
                   email: req.email,
                   phone: req.mobile,
                   role: req.requestedRole,
-                  favoriteProductIds: []
+                  favoriteProductIds: [],
+                  isConfirmed: true, // Auto-confirm legacy flow
+                  hasSetCredentials: true
               };
               this.users.push(newUser);
 
@@ -319,10 +337,27 @@ class MockDataService {
       if (req) req.status = 'Rejected';
   }
 
-  verifyCodeLogin(email: string, code: string): User | null {
-      const req = this.registrationRequests.find(r => r.email.toLowerCase() === email.toLowerCase().trim() && r.temporaryCode === code.toUpperCase().trim() && r.status === 'Approved');
+  verifyCodeLogin(code: string): User | null {
+      // Find a registration request with this code
+      const req = this.registrationRequests.find(r => r.temporaryCode === code.toUpperCase().trim() && r.status === 'Approved');
       if (req) {
-          return this.users.find(u => u.email.toLowerCase() === email.toLowerCase().trim()) || null;
+          // Find or create the user
+          let user = this.users.find(u => u.id === req.id);
+          if (!user) {
+              user = {
+                  id: req.id,
+                  name: `${req.firstName} ${req.lastName}`,
+                  businessName: req.businessName,
+                  email: req.email,
+                  phone: req.mobile,
+                  role: req.requestedRole,
+                  favoriteProductIds: [],
+                  isConfirmed: false,
+                  hasSetCredentials: false
+              };
+              this.users.push(user);
+          }
+          return user;
       }
       return null;
   }
@@ -366,7 +401,9 @@ class MockDataService {
         email: data.email,
         phone: data.mobile,
         role: data.role,
-        favoriteProductIds: []
+        favoriteProductIds: [],
+        isConfirmed: false,
+        hasSetCredentials: false
     };
     this.users.push(newUser);
 
@@ -396,7 +433,9 @@ class MockDataService {
       businessName: data.businessName,
       email: data.email,
       role: data.role,
-      favoriteProductIds: []
+      favoriteProductIds: [],
+      isConfirmed: true,
+      hasSetCredentials: true
     };
     this.users.push(newUser);
     return newUser;

@@ -1,5 +1,4 @@
 
-
 export enum UserRole {
   FARMER = 'FARMER',
   WHOLESALER = 'WHOLESALER',
@@ -83,6 +82,9 @@ export interface User {
   commissionRate?: number;
   smsNotificationsEnabled?: boolean;
   favoriteProductIds?: string[];
+  // Onboarding status
+  isConfirmed?: boolean;
+  hasSetCredentials?: boolean;
 }
 
 export type ProductUnit = 'KG' | 'Tray' | 'Bin' | 'Tonne' | 'loose' | 'Each' | 'Bag';
