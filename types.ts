@@ -1,4 +1,5 @@
 
+
 export enum UserRole {
   FARMER = 'FARMER',
   WHOLESALER = 'WHOLESALER',
@@ -283,19 +284,18 @@ export interface OnboardingFormTemplate {
 export interface RegistrationRequest {
   id: string;
   businessName: string;
-  name: string;
+  firstName: string;
+  lastName: string;
   email: string;
+  mobile: string;
   requestedRole: UserRole;
-  industry?: Industry;
   status: 'Pending' | 'Approved' | 'Rejected';
   submittedDate: string;
-  paymentTerms?: string;
-  customTerms?: string;
+  temporaryCode?: string;
+  // Fix: Added missing consumerData property used in various components
   consumerData?: {
     location?: string;
-    weeklySpend?: number;
-    orderFrequency?: string;
-    invoiceFile?: string; 
+    invoiceFile?: string;
     mobile?: string;
   };
 }

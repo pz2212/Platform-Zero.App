@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { 
   X, UserPlus, ShieldCheck, Mail, Smartphone, 
@@ -44,7 +45,8 @@ export const InviteBuyerModal: React.FC<InviteBuyerModalProps> = ({ isOpen, onCl
       // Simulate API call
       await new Promise(r => setTimeout(r, 1200));
       
-      const request = mockService.createManualInvite({
+      // Fix for Error: Property 'createManualInvite' does not exist on type 'MockDataService'. Did you mean 'createManualPortalInvite'?
+      const request = mockService.createManualPortalInvite({
         businessName: formData.businessName,
         name: formData.name,
         email: formData.email,
@@ -90,7 +92,7 @@ export const InviteBuyerModal: React.FC<InviteBuyerModalProps> = ({ isOpen, onCl
               <p className="text-[10px] font-black text-indigo-500 uppercase tracking-[0.2em] mt-1">Direct Wholesaler-to-Buyer Invitation</p>
             </div>
           </div>
-          <button onClick={onClose} className="text-gray-300 hover:text-gray-600 transition-colors p-2 bg-gray-50 rounded-full">
+          <button onClick={onClose} className="text-gray-300 hover:text-gray-900 transition-colors p-2 bg-gray-50 rounded-full">
             <X size={24} />
           </button>
         </div>
@@ -110,28 +112,28 @@ export const InviteBuyerModal: React.FC<InviteBuyerModalProps> = ({ isOpen, onCl
                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 ml-1 block">Full Name</label>
                    <div className="relative">
                       <UserPlus size={16} className="absolute left-4 top-4 text-gray-400"/>
-                      <input name="name" required placeholder="Buyer Contact Name" className="w-full pl-12 pr-4 py-4 bg-gray-50 border border-gray-100 rounded-2xl text-sm font-bold text-gray-900 focus:ring-4 focus:ring-indigo-500/5 transition-all outline-none" value={formData.name} onChange={handleInputChange}/>
+                      <input name="name" required placeholder="Buyer Contact Name" className="w-full pl-12 pr-4 py-4 bg-gray-50 border border-gray-100 rounded-2xl text-sm font-bold text-gray-900 focus:ring-4 focus:ring-indigo-50/5 transition-all outline-none" value={formData.name} onChange={handleInputChange}/>
                    </div>
                 </div>
                 <div className="md:col-span-2">
                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 ml-1 block">Business Trading Name</label>
                    <div className="relative">
                       <Building size={16} className="absolute left-4 top-4 text-gray-400"/>
-                      <input name="businessName" required placeholder="e.g. The Morning Cafe" className="w-full pl-12 pr-4 py-4 bg-gray-50 border border-gray-100 rounded-2xl text-sm font-bold text-gray-900 focus:ring-4 focus:ring-indigo-500/5 transition-all outline-none" value={formData.businessName} onChange={handleInputChange}/>
+                      <input name="businessName" required placeholder="e.g. The Morning Cafe" className="w-full pl-12 pr-4 py-4 bg-gray-50 border border-gray-100 rounded-2xl text-sm font-bold text-gray-900 focus:ring-4 focus:ring-indigo-50/5 transition-all outline-none" value={formData.businessName} onChange={handleInputChange}/>
                    </div>
                 </div>
                 <div>
                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 ml-1 block">Email Address</label>
                    <div className="relative">
                       <Mail size={16} className="absolute left-4 top-4 text-gray-400"/>
-                      <input name="email" type="email" required placeholder="name@business.com" className="w-full pl-12 pr-4 py-4 bg-gray-50 border border-gray-100 rounded-2xl text-sm font-bold text-gray-900 focus:ring-4 focus:ring-indigo-500/5 transition-all outline-none" value={formData.email} onChange={handleInputChange}/>
+                      <input name="email" type="email" required placeholder="name@business.com" className="w-full pl-12 pr-4 py-4 bg-gray-50 border border-gray-100 rounded-2xl text-sm font-bold text-gray-900 focus:ring-4 focus:ring-indigo-50/5 transition-all outline-none" value={formData.email} onChange={handleInputChange}/>
                    </div>
                 </div>
                 <div>
                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 ml-1 block">Phone / Mobile</label>
                    <div className="relative">
                       <Smartphone size={16} className="absolute left-4 top-4 text-gray-400"/>
-                      <input name="phone" required placeholder="0400 000 000" className="w-full pl-12 pr-4 py-4 bg-gray-50 border border-gray-100 rounded-2xl text-sm font-bold text-gray-900 focus:ring-4 focus:ring-indigo-500/5 transition-all outline-none" value={formData.phone} onChange={handleInputChange}/>
+                      <input name="phone" required placeholder="0400 000 000" className="w-full pl-12 pr-4 py-4 bg-gray-50 border border-gray-100 rounded-2xl text-sm font-bold text-gray-900 focus:ring-4 focus:ring-indigo-50/5 transition-all outline-none" value={formData.phone} onChange={handleInputChange}/>
                    </div>
                 </div>
               </div>
