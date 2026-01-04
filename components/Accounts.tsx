@@ -54,7 +54,8 @@ const ConsumerAccounts: React.FC<AccountsProps> = ({ user }) => {
         { name: 'Deli / Pantry', value: 10, color: '#F59E0B' },
     ];
 
-    // @ts-ignore - dynamic bonus fromGrowth Hub
+    // DYNAMIC INCENTIVE BALANCE
+    // @ts-ignore - dynamic balance assigned via Growth Hub logic in mockService
     const incentiveBalance = user.incentiveBalance || 0;
 
     return (
