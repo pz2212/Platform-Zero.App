@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { UserRole } from '../types';
 import { mockService } from '../services/mockDataService';
+import { emailService } from '../services/emailService';
 import { triggerNativeSms } from '../services/smsService';
 
 interface ManualInviteModalProps {
@@ -65,22 +66,32 @@ export const ManualInviteModal: React.FC<ManualInviteModalProps> = ({ isOpen, on
         alert("No mobile number provided.");
         return;
     }
-    // Correct link pointing to the actual site origin with #login hook
     const appUrl = window.location.origin + window.location.pathname + '#login';
-    // Exact formatting from screenshot: "PZ INVITE: Hi [Name] ! ... access code is: [Code]. Log in at [URL] ..."
     const message = `PZ INVITE: Hi ${formData.firstName} ! You've been invited to Platform Zero. Your unique access code is: ${generatedCode}. Log in at ${appUrl} to finish your onboarding.`;
     triggerNativeSms(formData.mobile, message);
   };
 
-  const handleSendEmail = () => {
+  const handleSendEmail = async () => {
     if (!formData.email) {
         alert("No email address provided.");
         return;
     }
-    const appUrl = window.location.origin + window.location.pathname + '#login';
-    const subject = encodeURIComponent("Welcome to Platform Zero");
-    const body = encodeURIComponent(`Hi ${formData.firstName},\n\nYou've been invited to Platform Zero. Your unique access code to start your trade onboarding is: ${generatedCode}\n\nLog in here: ${appUrl}\n\nBest regards,\nPlatform Zero Admin`);
-    window.open(`mailto:${formData.email}?subject=${subject}&body=${body}`);
+    setIsSubmitting(true);
+    
+    const context = {
+        inviteCode: generatedCode,
+        loginUrl: window.location.origin + window.location.pathname + '#login',
+        onboardingTask: 'Business Document Verification'
+    };
+
+    await emailService.sendSmartEmail(
+        { email: formData.email, name: formData.firstName, businessName: formData.businessName, role: formData.role },
+        'INVITE',
+        context
+    );
+
+    setIsSubmitting(false);
+    alert("🚀 Onboarding email dispatched through Platform Comm Engine!");
   };
 
   return (
@@ -196,16 +207,6 @@ export const ManualInviteModal: React.FC<ManualInviteModalProps> = ({ isOpen, on
                 </div>
             </div>
 
-            <div className="bg-orange-50 border border-orange-100 rounded-3xl p-6 flex items-start gap-4">
-                <div className="bg-white p-2.5 rounded-xl shadow-sm text-orange-600 border border-orange-100 flex-shrink-0">
-                    <AlertTriangle size={20}/>
-                </div>
-                <div>
-                    <p className="text-xs font-black text-orange-900 uppercase tracking-tight leading-none mb-1">Onboarding Restricted</p>
-                    <p className="text-[11px] text-orange-700 font-medium leading-relaxed">This user will be forced to complete and submit trade documents upon first login. <span className="font-black">Trade functionality remains disabled</span> until admin verification.</p>
-                </div>
-            </div>
-
             <button 
                 type="submit"
                 disabled={isSubmitting || !formData.businessName || !formData.firstName || !formData.mobile}
@@ -242,9 +243,11 @@ export const ManualInviteModal: React.FC<ManualInviteModalProps> = ({ isOpen, on
                     </button>
                     <button 
                         onClick={handleSendEmail}
-                        className="py-5 bg-[#0F172A] text-white rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-xl hover:bg-black transition-all active:scale-95 flex items-center justify-center gap-3"
+                        disabled={isSubmitting}
+                        className="py-5 bg-[#0F172A] text-white rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-xl hover:bg-black transition-all active:scale-95 flex items-center justify-center gap-3 disabled:opacity-50"
                     >
-                        <Mail size={20}/> Dispatch via Email
+                        {isSubmitting ? <Loader2 className="animate-spin" size={20}/> : <Mail size={20}/>}
+                        Dispatch via Email
                     </button>
                 </div>
              </div>

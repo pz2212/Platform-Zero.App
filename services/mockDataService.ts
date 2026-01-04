@@ -30,7 +30,6 @@ export interface PortalInvite {
   createdAt: string;
 }
 
-// Added INDUSTRIES constant for the Growth Hub and other components
 export const INDUSTRIES: Industry[] = [
   'Cafe', 'Restaurant', 'Pub', 'Hotel', 'Sporting Club', 'RSL', 'Casino', 
   'Catering', 'Grocery Store', 'Airlines', 'School', 'Aged Care', 'Hospital'
@@ -50,28 +49,19 @@ class MockDataService {
   private users: User[] = [...USERS_INITIAL];
   private portalInvites: PortalInvite[] = [];
   private registrationRequests: RegistrationRequest[] = [];
+  private communicationLogs: any[] = [];
   private roleIncentives: Record<string, RoleIncentive> = {
     [UserRole.FARMER]: { amount: 500, weeks: 4, activationDays: 7, minSpendPerWeek: 100, referrerBonusEnabled: true, referrerBonusAmount: 250 },
     [UserRole.WHOLESALER]: { amount: 1000, weeks: 8, activationDays: 14, minSpendPerWeek: 500, referrerBonusEnabled: true, referrerBonusAmount: 500 },
     [UserRole.CONSUMER]: { amount: 100, weeks: 2, activationDays: 3, minSpendPerWeek: 50, referrerBonusEnabled: true, referrerBonusAmount: 25 },
     [UserRole.GROCERY]: { amount: 250, weeks: 4, activationDays: 7, minSpendPerWeek: 150, referrerBonusEnabled: true, referrerBonusAmount: 100 },
   };
-  // Added industry incentives map
   private industryIncentives: Record<Industry, number> = {
     'Cafe': 15, 'Restaurant': 15, 'Pub': 15, 'Hotel': 15, 'Sporting Club': 15,
     'RSL': 15, 'Casino': 15, 'Catering': 15, 'Grocery Store': 15, 'Airlines': 15,
     'School': 15, 'Aged Care': 15, 'Hospital': 15
   };
-  private products: Product[] = [
-    { id: 'p1', name: 'Organic Roma Tomatoes', category: 'Vegetable', variety: 'Roma', imageUrl: 'https://images.unsplash.com/photo-1592924357228-91a4daadcfea?auto=format&fit=crop&q=80&w=400&h=400', defaultPricePerKg: 4.50, co2SavingsPerKg: 1.2 },
-    { id: 'p1-truss', name: 'Truss Vine Tomatoes', category: 'Vegetable', variety: 'Vine-Ripened', imageUrl: 'https://images.unsplash.com/photo-1582284540020-8acbe03f4924?auto=format&fit=crop&q=80&w=400&h=400', defaultPricePerKg: 6.20, co2SavingsPerKg: 1.0 },
-    { id: 'p2', name: 'Fresh Lettuce', category: 'Vegetable', variety: 'Cos', imageUrl: 'https://images.unsplash.com/photo-1518977676601-b53f82aba655?auto=format&fit=crop&q=80&w=400&h=400', defaultPricePerKg: 1.20, co2SavingsPerKg: 0.8 },
-    { id: 'p3', name: 'Apples', category: 'Fruit', variety: 'Pink Lady', imageUrl: 'https://images.unsplash.com/photo-1560806887-1e4cd0b6cbd6?auto=format&fit=crop&q=80&w=400&h=400', defaultPricePerKg: 3.80, co2SavingsPerKg: 1.5 },
-    { id: 'p4', name: 'Eggplants', category: 'Vegetable', variety: 'Black Beauty', imageUrl: 'https://images.unsplash.com/photo-1615484477778-ca3b77940c25?auto=format&fit=crop&q=80&w=400&h=400', defaultPricePerKg: 5.50, co2SavingsPerKg: 1.1 },
-    { id: 'p5', name: 'Dutch Cream Potatoes', category: 'Vegetable', variety: 'Grade A', imageUrl: 'https://images.unsplash.com/photo-1518977676601-b53f82aba655?auto=format&fit=crop&q=80&w=400&h=400', defaultPricePerKg: 2.10, co2SavingsPerKg: 0.9 },
-    { id: 'p-banana-cav', name: 'Cavendish Bananas', category: 'Fruit', variety: 'Cavendish', imageUrl: 'https://images.unsplash.com/photo-1571771894821-ad9902537317?auto=format&fit=crop&q=80&w=400&h=400', defaultPricePerKg: 3.50, co2SavingsPerKg: 0.9 },
-    { id: 'p-banana-lady', name: 'Lady Finger Bananas', category: 'Fruit', variety: 'Lady Finger', imageUrl: 'https://images.unsplash.com/photo-1603833665858-e61d17a86224?auto=format&fit=crop&q=80&w=400&h=400', defaultPricePerKg: 5.80, co2SavingsPerKg: 0.7 },
-  ];
+  private products: Product[] = [];
   private inventory: InventoryItem[] = [];
   private orders: Order[] = [];
   private issues: OrderIssue[] = [];
@@ -79,18 +69,11 @@ class MockDataService {
   private customers: Customer[] = [];
   private supplierPriceRequests: SupplierPriceRequest[] = [];
   private chatMessages: ChatMessage[] = [];
-  // Added drivers and packers lists
   private drivers: Driver[] = [];
   private packers: Packer[] = [];
 
   constructor() {
     this.loadFromStorage();
-    if (this.products.length === 0) {
-      this.products = [
-        { id: 'p1', name: 'Organic Roma Tomatoes', category: 'Vegetable', variety: 'Roma', imageUrl: 'https://images.unsplash.com/photo-1592924357228-91a4daadcfea?auto=format&fit=crop&q=80&w=400&h=400', defaultPricePerKg: 4.50, co2SavingsPerKg: 1.2 },
-        { id: 'p1-truss', name: 'Truss Vine Tomatoes', category: 'Vegetable', variety: 'Vine-Ripened', imageUrl: 'https://images.unsplash.com/photo-1582284540020-8acbe03f4924?auto=format&fit=crop&q=80&w=400&h=400', defaultPricePerKg: 6.20, co2SavingsPerKg: 1.0 },
-      ];
-    }
   }
 
   private saveToStorage() {
@@ -98,6 +81,7 @@ class MockDataService {
       users: this.users,
       portalInvites: this.portalInvites,
       registrationRequests: this.registrationRequests,
+      communicationLogs: this.communicationLogs,
       roleIncentives: this.roleIncentives,
       industryIncentives: this.industryIncentives,
       products: this.products,
@@ -111,17 +95,18 @@ class MockDataService {
       drivers: this.drivers,
       packers: this.packers
     };
-    localStorage.setItem('pz_platform_data', JSON.stringify(data));
+    localStorage.setItem('pz_platform_data_v2', JSON.stringify(data));
   }
 
   private loadFromStorage() {
-    const saved = localStorage.getItem('pz_platform_data');
+    const saved = localStorage.getItem('pz_platform_data_v2');
     if (saved) {
       try {
         const data = JSON.parse(saved);
         this.users = data.users || this.users;
         this.portalInvites = data.portalInvites || this.portalInvites;
         this.registrationRequests = data.registrationRequests || this.registrationRequests;
+        this.communicationLogs = data.communicationLogs || [];
         this.roleIncentives = data.roleIncentives || this.roleIncentives;
         this.industryIncentives = data.industryIncentives || this.industryIncentives;
         this.products = data.products || this.products;
@@ -140,6 +125,18 @@ class MockDataService {
     }
   }
 
+  // --- COMMUNICATION LEDGER ---
+  logCommunication(log: any) {
+    this.communicationLogs.unshift(log);
+    this.saveToStorage();
+  }
+
+  getCommunicationLogs() {
+    this.loadFromStorage();
+    return this.communicationLogs;
+  }
+
+  // --- REFINED LOGIN LOGIC ---
   verifyCodeLogin(code: string): User | null {
     this.loadFromStorage();
     const cleanCode = code.toUpperCase().trim();
@@ -214,22 +211,6 @@ class MockDataService {
       incentiveBalance: bonus
     };
     this.users.push(newUser);
-
-    if (data.role === UserRole.CONSUMER || data.role === UserRole.GROCERY) {
-      this.customers.push({
-        id: newUser.id,
-        businessName: newUser.businessName,
-        contactName: newUser.name,
-        email: newUser.email,
-        phone: newUser.phone,
-        category: data.role === UserRole.GROCERY ? 'Grocery' : 'Restaurant',
-        connectionStatus: 'Pricing Pending',
-        pzPaymentTermsDays: 7,
-        supplierPaymentTermsDays: 14,
-        pzMarkup: 15
-      });
-    }
-
     this.saveToStorage();
     return invite;
   }
@@ -465,7 +446,6 @@ class MockDataService {
     }
   }
 
-  // Fixed: Added missing methods for catalog, logistics, and personnel management
   getProduct(id: string) { return this.products.find(p => p.id === id); }
   
   updateProductPricing(id: string, price: number, unit: ProductUnit) {

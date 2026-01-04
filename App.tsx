@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { HashRouter as Router, Routes, Route, Link, useLocation, Navigate, useNavigate } from 'react-router-dom';
 import { UserRole, User, AppNotification, RegistrationRequest } from './types';
 import { mockService } from './services/mockDataService';
+import { emailService } from './services/emailService';
 import { Dashboard } from './components/Dashboard';
 import { FarmerDashboard } from './components/FarmerDashboard';
 import { ConsumerDashboard } from './components/ConsumerDashboard';
@@ -67,6 +68,7 @@ const SidebarLink = ({ to, icon: Icon, label, active, onClick, badge = 0, isSubI
 const AppLayout = ({ children, user, onLogout }: any) => {
   const location = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isConfirmingEmail, setIsConfirmingEmail] = useState(false);
   const [isCustomerActivityOpen, setIsCustomerActivityOpen] = useState(
     location.pathname === '/login-requests' || 
     location.pathname === '/customer-portal' || 
@@ -96,6 +98,18 @@ const AppLayout = ({ children, user, onLogout }: any) => {
     }
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isMobileMenuOpen]);
+
+  const handleManualConfirm = async () => {
+    setIsConfirmingEmail(true);
+    // Trigger the SendGrid/Gemini Email Flow
+    await emailService.sendSmartEmail(
+        { email: user.email, name: user.name, businessName: user.businessName, role: user.role },
+        'CONFIRMATION',
+        { status: 'Profile Finalized', timestamp: new Date().toISOString() }
+    );
+    mockService.confirmUser(user.id);
+    setIsConfirmingEmail(false);
+  };
 
   const NavContent = () => (
     <>
@@ -188,10 +202,11 @@ const AppLayout = ({ children, user, onLogout }: any) => {
                 <h2 className="text-2xl font-black text-gray-900 uppercase tracking-tight mb-3">Check Your Inbox</h2>
                 <p className="text-gray-500 font-medium leading-relaxed mb-8">We've sent a <span className="font-black text-gray-900">confirmation receipt</span> to <span className="font-bold text-indigo-600">{user.email}</span>. Please click the link in the email to secure your profile and enable trading.</p>
                 <button 
-                  onClick={() => mockService.confirmUser(user.id)}
-                  className="w-full py-5 bg-indigo-600 text-white rounded-2xl font-black uppercase tracking-[0.2em] shadow-xl hover:bg-black transition-all active:scale-95 flex items-center justify-center gap-3"
+                  onClick={handleManualConfirm}
+                  disabled={isConfirmingEmail}
+                  className="w-full py-5 bg-indigo-600 text-white rounded-2xl font-black uppercase tracking-[0.2em] shadow-xl hover:bg-black transition-all active:scale-95 flex items-center justify-center gap-3 disabled:opacity-50"
                 >
-                    Confirm Profile (Simulated)
+                    {isConfirmingEmail ? <Loader2 className="animate-spin" /> : 'Confirm Profile (Simulated)'}
                 </button>
             </div>
         </div>
