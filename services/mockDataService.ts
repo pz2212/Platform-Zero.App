@@ -277,35 +277,39 @@ class MockDataService {
       const req = this.registrationRequests.find(r => r.id === id);
       if (req) {
           req.status = 'Approved';
-          // Generate temporary code
-          req.temporaryCode = Math.random().toString(36).substring(2, 8).toUpperCase();
+          // Generate temporary code if not already present
+          if (!req.temporaryCode) {
+              req.temporaryCode = Math.random().toString(36).substring(2, 8).toUpperCase();
+          }
           
-          // Create the account
-          const newUser: User = {
-              id: req.id,
-              name: `${req.firstName} ${req.lastName}`,
-              businessName: req.businessName,
-              email: req.email,
-              phone: req.mobile,
-              role: req.requestedRole,
-              favoriteProductIds: []
-          };
-          this.users.push(newUser);
+          // Create the account if it doesn't exist
+          if (!this.users.some(u => u.email.toLowerCase() === req.email.toLowerCase())) {
+              const newUser: User = {
+                  id: req.id,
+                  name: `${req.firstName} ${req.lastName}`,
+                  businessName: req.businessName,
+                  email: req.email,
+                  phone: req.mobile,
+                  role: req.requestedRole,
+                  favoriteProductIds: []
+              };
+              this.users.push(newUser);
 
-          // If buyer, create customer profile
-          if (req.requestedRole === UserRole.CONSUMER || req.requestedRole === UserRole.GROCERY) {
-              this.customers.push({
-                  id: newUser.id,
-                  businessName: newUser.businessName,
-                  contactName: newUser.name,
-                  email: newUser.email,
-                  phone: newUser.phone,
-                  category: req.requestedRole === UserRole.GROCERY ? 'Grocery' : 'Restaurant',
-                  connectionStatus: 'Pricing Pending',
-                  pzPaymentTermsDays: 7,
-                  supplierPaymentTermsDays: 14,
-                  pzMarkup: 15
-              });
+              // If buyer, create customer profile
+              if (req.requestedRole === UserRole.CONSUMER || req.requestedRole === UserRole.GROCERY) {
+                  this.customers.push({
+                      id: newUser.id,
+                      businessName: newUser.businessName,
+                      contactName: newUser.name,
+                      email: newUser.email,
+                      phone: newUser.phone,
+                      category: req.requestedRole === UserRole.GROCERY ? 'Grocery' : 'Restaurant',
+                      connectionStatus: 'Pricing Pending',
+                      pzPaymentTermsDays: 7,
+                      supplierPaymentTermsDays: 14,
+                      pzMarkup: 15
+                  });
+              }
           }
       }
   }
@@ -316,9 +320,9 @@ class MockDataService {
   }
 
   verifyCodeLogin(email: string, code: string): User | null {
-      const req = this.registrationRequests.find(r => r.email.toLowerCase() === email.toLowerCase() && r.temporaryCode === code.toUpperCase() && r.status === 'Approved');
+      const req = this.registrationRequests.find(r => r.email.toLowerCase() === email.toLowerCase().trim() && r.temporaryCode === code.toUpperCase().trim() && r.status === 'Approved');
       if (req) {
-          return this.users.find(u => u.email.toLowerCase() === email.toLowerCase()) || null;
+          return this.users.find(u => u.email.toLowerCase() === email.toLowerCase().trim()) || null;
       }
       return null;
   }
@@ -339,8 +343,8 @@ class MockDataService {
     };
     this.portalInvites.push(invite);
 
-    // Also track as a waiting signup request for consistency
-    this.registrationRequests.push({
+    // Manual provisioning should be pre-approved for immediate login
+    const req: RegistrationRequest = {
         id: invite.id,
         businessName: data.businessName,
         firstName: data.firstName,
@@ -348,10 +352,39 @@ class MockDataService {
         email: data.email,
         mobile: data.mobile,
         requestedRole: data.role,
-        status: 'Pending',
+        status: 'Approved',
         submittedDate: invite.createdAt,
         temporaryCode: code
-    });
+    };
+    this.registrationRequests.push(req);
+
+    // Create corresponding user immediately so verifyCodeLogin finds them
+    const newUser: User = {
+        id: invite.id,
+        name: `${data.firstName} ${data.lastName}`,
+        businessName: data.businessName,
+        email: data.email,
+        phone: data.mobile,
+        role: data.role,
+        favoriteProductIds: []
+    };
+    this.users.push(newUser);
+
+    // If buyer, create customer profile
+    if (data.role === UserRole.CONSUMER || data.role === UserRole.GROCERY) {
+        this.customers.push({
+            id: newUser.id,
+            businessName: newUser.businessName,
+            contactName: newUser.name,
+            email: newUser.email,
+            phone: newUser.phone,
+            category: data.role === UserRole.GROCERY ? 'Grocery' : 'Restaurant',
+            connectionStatus: 'Pricing Pending',
+            pzPaymentTermsDays: 7,
+            supplierPaymentTermsDays: 14,
+            pzMarkup: 15
+        });
+    }
 
     return invite;
   }

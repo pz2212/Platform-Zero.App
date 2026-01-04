@@ -283,7 +283,7 @@ const App = () => {
   }, [user]);
 
   const handleAutoLogin = (email: string) => {
-    const foundUser = mockService.getAllUsers().find(u => u.email.toLowerCase() === email.toLowerCase());
+    const foundUser = mockService.getAllUsers().find(u => u.email.toLowerCase() === email.toLowerCase().trim());
     if (foundUser) { setUser(foundUser); setShowAuthModal(false); } else { alert("Account not found."); }
   };
 
@@ -362,7 +362,10 @@ const AuthModal = ({ isOpen, onClose, onAutoLogin, onCodeLogin }: any) => {
         e.preventDefault();
         setIsLoggingIn(true);
         await new Promise(r => setTimeout(r, 1000));
-        const user = mockService.verifyCodeLogin(loginEmail, loginCode);
+        // Normalize input
+        const cleanEmail = loginEmail.trim().toLowerCase();
+        const cleanCode = loginCode.trim().toUpperCase();
+        const user = mockService.verifyCodeLogin(cleanEmail, cleanCode);
         if (user) {
             onCodeLogin(user);
         } else {
