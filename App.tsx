@@ -1,5 +1,4 @@
 
-
 import React, { useState, useEffect, useRef } from 'react';
 import { HashRouter as Router, Routes, Route, Link, useLocation, Navigate, useNavigate } from 'react-router-dom';
 import { UserRole, User, AppNotification, RegistrationRequest } from './types';
@@ -38,7 +37,6 @@ import {
   DollarSign, X, Lock, ArrowLeft, Bell, 
   ShoppingBag, ShieldCheck, TrendingUp, Target, Plus, ChevronUp, Layers, 
   Sparkles, User as UserIcon, Building, ChevronRight,
-  // Fix: Added missing Mail icon to the imports
   Sprout, Globe, Users2, Circle, LogIn, ArrowRight, Menu, Search, Calculator, BarChart3,
   Wallet, FileText, CreditCard, Activity, Briefcase, Store, TrendingDown, Gavel, Leaf, BarChart4, Loader2, Mail
 } from 'lucide-react';
@@ -144,7 +142,7 @@ const AppLayout = ({ children, user, onLogout }: any) => {
                 <SidebarLink to="/negotiations" icon={Gavel} label="Negotiations" active={isActive('/negotiations')} />
             </div>
 
-            <div className="pt-4 mt-4 border-t border-gray-50">
+            <div className="pt-4 mt-4 border-t border-gray-100">
                 <p className="px-4 text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Management</p>
                 <SidebarLink to="/rep-management" icon={Briefcase} label="Rep Management" active={isActive('/rep-management')} />
                 <SidebarLink to="/suppliers" icon={Store} label="Suppliers" active={isActive('/suppliers')} />
@@ -272,6 +270,18 @@ const App = () => {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [authStep, setAuthStep] = useState<'category' | 'credentials'>('category');
 
+  // Trigger AuthModal if #login is detected in the URL
+  useEffect(() => {
+    const handleHashChange = () => {
+      if (window.location.hash === '#login' && !user) {
+        setShowAuthModal(true);
+      }
+    };
+    handleHashChange(); // Run once on mount
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, [user]);
+
   const handleAutoLogin = (email: string) => {
     const foundUser = mockService.getAllUsers().find(u => u.email.toLowerCase() === email.toLowerCase());
     if (foundUser) { setUser(foundUser); setShowAuthModal(false); } else { alert("Account not found."); }
@@ -296,7 +306,10 @@ const App = () => {
                         <ConsumerLanding onLogin={() => { setAuthStep('category'); setShowAuthModal(true); }} />
                         <AuthModal 
                             isOpen={showAuthModal} 
-                            onClose={() => setShowAuthModal(false)} 
+                            onClose={() => { 
+                              setShowAuthModal(false); 
+                              if (window.location.hash === '#login') window.location.hash = ''; 
+                            }} 
                             onAutoLogin={handleAutoLogin} 
                             onCodeLogin={handleCodeLogin}
                         />

@@ -45,7 +45,6 @@ export const InviteBuyerModal: React.FC<InviteBuyerModalProps> = ({ isOpen, onCl
       // Simulate API call
       await new Promise(r => setTimeout(r, 1200));
       
-      // Fix for Error: Property 'createManualInvite' does not exist on type 'MockDataService'. Did you mean 'createManualPortalInvite'?
       const request = mockService.createManualPortalInvite({
         businessName: formData.businessName,
         name: formData.name,
@@ -65,7 +64,8 @@ export const InviteBuyerModal: React.FC<InviteBuyerModalProps> = ({ isOpen, onCl
     }
   };
 
-  const inviteLink = generateProductDeepLink('portal', generatedRequestId.split('-').pop() || 'new-buyer');
+  // Link updated to point back to the app with #login hook
+  const inviteLink = window.location.origin + window.location.pathname + '#login';
 
   const handleCopyLink = () => {
     navigator.clipboard.writeText(inviteLink);
@@ -210,7 +210,7 @@ export const InviteBuyerModal: React.FC<InviteBuyerModalProps> = ({ isOpen, onCl
              </div>
 
              <div className="space-y-4">
-                <div className="bg-gray-50 border-2 border-dashed border-gray-200 p-6 rounded-3xl flex items-center gap-4 group hover:border-indigo-400 transition-all">
+                <div className="bg-gray-50 border-2 border-dashed border-gray-200 p-6 rounded-3xl flex items-center gap-4 group hover:border-indigo-400 transition-all cursor-pointer shadow-inner-sm" onClick={handleCopyLink}>
                     <div className="flex-1 text-left">
                         <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Unique Setup URL</p>
                         <p className="text-xs font-mono font-black text-indigo-600 truncate">{inviteLink}</p>

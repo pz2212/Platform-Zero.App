@@ -65,7 +65,10 @@ export const ManualInviteModal: React.FC<ManualInviteModalProps> = ({ isOpen, on
         alert("No mobile number provided.");
         return;
     }
-    const message = `PZ INVITE: Hi ${formData.firstName}! You've been invited to Platform Zero. Your unique access code is: ${generatedCode}. Log in at portal.platformzero.io to finish your onboarding.`;
+    // Correct link pointing to the actual site origin with #login hook
+    const appUrl = window.location.origin + window.location.pathname + '#login';
+    // Exact formatting from screenshot: "PZ INVITE: Hi [Name] ! ... access code is: [Code]. Log in at [URL] ..."
+    const message = `PZ INVITE: Hi ${formData.firstName} ! You've been invited to Platform Zero. Your unique access code is: ${generatedCode}. Log in at ${appUrl} to finish your onboarding.`;
     triggerNativeSms(formData.mobile, message);
   };
 
@@ -74,8 +77,9 @@ export const ManualInviteModal: React.FC<ManualInviteModalProps> = ({ isOpen, on
         alert("No email address provided.");
         return;
     }
+    const appUrl = window.location.origin + window.location.pathname + '#login';
     const subject = encodeURIComponent("Welcome to Platform Zero");
-    const body = encodeURIComponent(`Hi ${formData.firstName},\n\nYou've been invited to Platform Zero. Your unique access code to start your trade onboarding is: ${generatedCode}\n\nLog in here: https://portal.platformzero.io\n\nBest regards,\nPlatform Zero Admin`);
+    const body = encodeURIComponent(`Hi ${formData.firstName},\n\nYou've been invited to Platform Zero. Your unique access code to start your trade onboarding is: ${generatedCode}\n\nLog in here: ${appUrl}\n\nBest regards,\nPlatform Zero Admin`);
     window.open(`mailto:${formData.email}?subject=${subject}&body=${body}`);
   };
 
