@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { User, InventoryItem, Product, ChatMessage, UserRole, Customer, Order } from '../types';
@@ -12,6 +13,7 @@ import {
   Package, DollarSign, Truck, Camera, Image as ImageIcon, ChevronDown, FolderOpen,
   Sprout, ShoppingCart, MessageSquare, Globe, ArrowUpRight, HelpCircle, Activity, Heart, TrendingUp
 } from 'lucide-react';
+import { ChatDialog } from './ChatDialog';
 
 interface ContactsProps {
   user: User;
@@ -19,7 +21,7 @@ interface ContactsProps {
 
 const AU_STATES = ['NSW', 'VIC', 'QLD', 'WA', 'SA', 'TAS', 'ACT', 'NT'];
 
-// Updated with Mobile Numbers (04xx xxx xxx) for direct SMS/Trade connectivity
+// Data derived from SA Produce Market Warehouse/Wholesaler Directory
 const SA_PRODUCE_MARKET_SUPPLIERS = [
     { name: 'Advent Produce', mobile: '0412 888 333', email: 'advent@saproducemarket.com.au', location: 'Store 31-33', specialty: 'General Produce', type: 'Wholesaler' },
     { name: 'AMJ Produce', mobile: '0422 777 444', email: 'sales@amjproduce.com.au', location: 'Burma Drive, Pooraka', specialty: 'Fruit & Veg', type: 'Warehouse' },
@@ -132,7 +134,6 @@ export const Contacts: React.FC<ContactsProps> = ({ user }) => {
   // Sourcing Data
   const [suppliers, setSuppliers] = useState<User[]>([]);
   const [supplierInventory, setSupplierInventory] = useState<Record<string, InventoryItem[]>>({});
-  const [expandedSupplierId, setExpandedSupplierId] = useState<string | null>(null);
 
   const [products, setProducts] = useState<Product[]>([]);
   const [myCustomers, setMyCustomers] = useState<Customer[]>([]);
@@ -172,17 +173,6 @@ export const Contacts: React.FC<ContactsProps> = ({ user }) => {
     setInputText('');
   };
 
-  const handlePurchaseFromBuying = (supplierId: string, item: InventoryItem) => {
-    const product = products.find(p => p.id === item.productId);
-    if (!product) return;
-    
-    const confirmMsg = `Initiate purchase for ${item.quantityKg}${product.unit || 'kg'} of ${product.name} from ${suppliers.find(s => s.id === supplierId)?.businessName}?\nTotal: $${(item.quantityKg * product.defaultPricePerKg).toFixed(2)} + $${(item.logisticsPrice || 0).toFixed(2)} logistics.`;
-    if (window.confirm(confirmMsg)) {
-        mockService.createInstantOrder(user.id, item, item.quantityKg, product.defaultPricePerKg);
-        alert("Purchase successful! Check your Financials history.");
-    }
-  };
-
   const filteredCustomers = myCustomers.filter(c => 
     c.connectedSupplierId === user.id &&
     (c.businessName.toLowerCase().includes(searchTerm.toLowerCase()) || 
@@ -196,14 +186,6 @@ export const Contacts: React.FC<ContactsProps> = ({ user }) => {
         s.type.toLowerCase().includes(searchTerm.toLowerCase())
       )
     : [];
-
-  const stats = useMemo(() => {
-    const connected = myCustomers.filter(c => c.connectedSupplierId === user.id);
-    const active = connected.filter(c => c.connectionStatus === 'Active').length;
-    const totalGmv = allOrders.filter(o => o.sellerId === user.id).reduce((sum, o) => sum + o.totalAmount, 0);
-    
-    return { total: connected.length, active, totalGmv };
-  }, [myCustomers, user.id, allOrders]);
 
   const getStatusConfig = (status: string | undefined) => {
       switch(status) {
@@ -258,7 +240,7 @@ export const Contacts: React.FC<ContactsProps> = ({ user }) => {
             </div>
             <div>
                 <h1 className="text-4xl font-black text-gray-900 tracking-tight uppercase leading-none">{activeTab === 'customers' ? 'Buyer Network' : 'Market Discovery'}</h1>
-                <p className="text-gray-400 font-bold text-xs uppercase tracking-widest mt-2">{activeTab === 'customers' ? 'Connected accounts & manual lead management' : 'Explore regional markets and new wholesale buyers'}</p>
+                <p className="text-gray-500 font-bold text-xs uppercase tracking-widest mt-2">{activeTab === 'customers' ? 'Connected accounts & manual lead management' : 'Explore regional markets and new wholesale buyers'}</p>
             </div>
           </div>
           <div className="relative w-full md:w-96 group">
@@ -444,7 +426,3 @@ export const Contacts: React.FC<ContactsProps> = ({ user }) => {
     </div>
   );
 };
-
-const ArrowLeft = ({ size = 24, ...props }: any) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>
-);

@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { HashRouter as Router, Routes, Route, Link, useLocation, Navigate, useNavigate } from 'react-router-dom';
 import { UserRole, User, AppNotification, RegistrationRequest } from '../types';
 import { mockService } from '../services/mockDataService';
+import { emailService } from '../services/emailService';
 import { Dashboard } from './Dashboard';
 import { FarmerDashboard } from './FarmerDashboard';
 import { ConsumerDashboard } from './ConsumerDashboard';
@@ -12,6 +13,7 @@ import { ProductPricing } from './ProductPricing';
 import { Marketplace } from './Marketplace';
 import { SupplierMarket } from './SupplierMarket';
 import { AdminDashboard } from './AdminDashboard';
+import { AdminAccounts } from './AdminAccounts';
 import { Settings as SettingsComponent } from './Settings';
 import { LoginRequests } from './LoginRequests';
 import { ConsumerOnboarding } from './ConsumerOnboarding';
@@ -29,16 +31,16 @@ import { Notifications } from './Notifications';
 import { LiveActivity } from './LiveActivity';
 import { Inventory } from './Inventory';
 import { SharedProductLanding } from './SharedProductLanding';
-import { AdminMarketOps } from './AdminMarketOps';
-// Added missing import for EnvironmentalImpact component
 import { EnvironmentalImpact } from './EnvironmentalImpact';
+import { AdminMarketOps } from './AdminMarketOps';
 import { 
   LayoutDashboard, ShoppingCart, Users, Settings, LogOut, Tags, ChevronDown, UserPlus, 
   DollarSign, X, Lock, ArrowLeft, Bell, 
   ShoppingBag, ShieldCheck, TrendingUp, Target, Plus, ChevronUp, Layers, 
   Sparkles, User as UserIcon, Building, ChevronRight,
   Sprout, Globe, Users2, Circle, LogIn, ArrowRight, Menu, Search, Calculator, BarChart3,
-  Wallet, FileText, CreditCard, Activity, Briefcase, Store, TrendingDown, Gavel, Leaf, BarChart4
+  Wallet, FileText, CreditCard, Activity, Briefcase, Store, TrendingDown, Gavel, Leaf, BarChart4, Loader2, Mail,
+  Key
 } from 'lucide-react';
 
 const SidebarLink = ({ to, icon: Icon, label, active, onClick, badge = 0, isSubItem = false }: any) => (
@@ -66,6 +68,7 @@ const SidebarLink = ({ to, icon: Icon, label, active, onClick, badge = 0, isSubI
 const AppLayout = ({ children, user, onLogout }: any) => {
   const location = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isConfirmingEmail, setIsConfirmingEmail] = useState(false);
   const [isCustomerActivityOpen, setIsCustomerActivityOpen] = useState(
     location.pathname === '/login-requests' || 
     location.pathname === '/customer-portal' || 
@@ -95,6 +98,18 @@ const AppLayout = ({ children, user, onLogout }: any) => {
     }
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isMobileMenuOpen]);
+
+  const handleManualConfirm = async () => {
+    setIsConfirmingEmail(true);
+    // Trigger the SendGrid/Gemini Email Flow
+    await emailService.sendSmartEmail(
+        { email: user.email, name: user.name, businessName: user.businessName, role: user.role },
+        'CONFIRMATION',
+        { status: 'Profile Finalized', timestamp: new Date().toISOString() }
+    );
+    mockService.confirmUser(user.id);
+    setIsConfirmingEmail(false);
+  };
 
   const NavContent = () => (
     <>
@@ -133,6 +148,7 @@ const AppLayout = ({ children, user, onLogout }: any) => {
                     )}
                 </div>
                 <SidebarLink to="/impact" icon={Leaf} label="Impact Dashboard" active={isActive('/impact')} />
+                <SidebarLink to="/admin-accounts" icon={Wallet} label="Global Ledger" active={isActive('/admin-accounts')} />
             </div>
 
             <div className="pt-4 mt-4 border-t border-gray-50">
@@ -141,7 +157,7 @@ const AppLayout = ({ children, user, onLogout }: any) => {
                 <SidebarLink to="/negotiations" icon={Gavel} label="Negotiations" active={isActive('/negotiations')} />
             </div>
 
-            <div className="pt-4 mt-4 border-t border-gray-50">
+            <div className="pt-4 mt-4 border-t border-gray-100">
                 <p className="px-4 text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Management</p>
                 <SidebarLink to="/rep-management" icon={Briefcase} label="Rep Management" active={isActive('/rep-management')} />
                 <SidebarLink to="/suppliers" icon={Store} label="Suppliers" active={isActive('/suppliers')} />
@@ -164,7 +180,8 @@ const AppLayout = ({ children, user, onLogout }: any) => {
         </div>
       ) : isPartner ? (
         <div className="space-y-1">
-            <SidebarLink to="/" icon={LayoutDashboard} label="Order Management" active={isActive('/', true)} />
+            <SidebarLink to="/" icon={LayoutDashboard} label="Dashboard" active={isActive('/', true)} />
+            <SidebarLink to="/contacts" icon={Users} label="Buyer Network" active={isActive('/contacts')} />
             <SidebarLink to="/pricing" icon={Tags} label="Inventory & Price" active={isActive('/pricing')} />
             <SidebarLink to="/accounts" icon={DollarSign} label="Financials" active={isActive('/accounts')} />
             <SidebarLink to="/market" icon={Globe} label="Supplier Market" active={isActive('/market')} />
@@ -175,6 +192,26 @@ const AppLayout = ({ children, user, onLogout }: any) => {
   
   return (
     <div className="flex min-h-screen bg-white">
+      {/* Trading Block Indicator Overlay for unconfirmed new users */}
+      {user && !user.isConfirmed && (
+        <div className="fixed inset-0 z-[500] bg-black/40 backdrop-blur-md flex items-center justify-center p-6 text-center">
+            <div className="bg-white rounded-[3rem] p-10 max-w-md shadow-2xl animate-in zoom-in-95 duration-300">
+                <div className="w-20 h-20 bg-indigo-50 text-indigo-600 rounded-3xl flex items-center justify-center mx-auto mb-8 shadow-inner-sm">
+                    <Mail size={40} />
+                </div>
+                <h2 className="text-2xl font-black text-gray-900 uppercase tracking-tight mb-3">Check Your Inbox</h2>
+                <p className="text-gray-500 font-medium leading-relaxed mb-8">We've sent a <span className="font-black text-gray-900">confirmation receipt</span> to <span className="font-bold text-indigo-600">{user.email}</span>. Please click the link in the email to secure your profile and enable trading.</p>
+                <button 
+                  onClick={handleManualConfirm}
+                  disabled={isConfirmingEmail}
+                  className="w-full py-5 bg-indigo-600 text-white rounded-2xl font-black uppercase tracking-[0.2em] shadow-xl hover:bg-black transition-all active:scale-95 flex items-center justify-center gap-3 disabled:opacity-50"
+                >
+                    {isConfirmingEmail ? <Loader2 className="animate-spin" /> : 'Confirm Profile (Simulated)'}
+                </button>
+            </div>
+        </div>
+      )}
+
       <aside className="hidden md:flex flex-col w-64 bg-white border-r border-gray-100 fixed inset-y-0 z-30">
         <div className="p-8 flex items-center gap-3">
           <div className="w-8 h-8 bg-[#043003] rounded-lg flex items-center justify-center text-white font-bold text-lg">P</div>
@@ -209,11 +246,11 @@ const AppLayout = ({ children, user, onLogout }: any) => {
             <div className="flex items-center gap-2 md:gap-4 relative">
                 <div className="flex items-center gap-3">
                   <div className="text-right hidden sm:block">
-                    <p className="text-xs font-black text-gray-900 leading-none mb-1 uppercase">{user.name}</p>
-                    <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest leading-none">{user.role}</p>
+                    <p className="text-xs font-black text-gray-900 leading-none mb-1 uppercase">{user?.name}</p>
+                    <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest leading-none">{user?.role}</p>
                   </div>
                   <div className="w-10 h-10 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-700 font-black shadow-sm shrink-0">
-                    {user.name.charAt(0)}
+                    {user?.name.charAt(0)}
                   </div>
                 </div>
 
@@ -235,7 +272,7 @@ const AppLayout = ({ children, user, onLogout }: any) => {
                     <div className="absolute right-0 top-14 w-[260px] bg-white rounded-3xl shadow-[0_25px_50px_-12px_rgba(0,0,0,0.25)] border border-gray-100 py-4 px-3 z-[60] animate-in zoom-in-95 slide-in-from-top-2 duration-200">
                         <div className="px-4 py-2 mb-4 border-b border-gray-50">
                             <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.2em] mb-0.5">Account</p>
-                            <p className="font-black text-gray-900 uppercase truncate text-xs">{user.businessName}</p>
+                            <p className="font-black text-gray-900 uppercase truncate text-xs">{user?.businessName}</p>
                         </div>
                         
                         <div className="space-y-1">
@@ -244,7 +281,7 @@ const AppLayout = ({ children, user, onLogout }: any) => {
 
                         <div className="mt-4 pt-4 border-t border-gray-100 space-y-1">
                             <SidebarLink to="/settings" icon={Settings} label="Settings" active={isActive('/settings')} />
-                            <button onClick={onLogout} className="w-full flex items-center justify-between px-4 py-3.5 text-red-600 hover:bg-red-50 rounded-xl text-sm font-black transition-all uppercase">
+                            <button onLogout={onLogout} className="w-full flex items-center justify-between px-4 py-3.5 text-red-600 hover:bg-red-50 rounded-xl text-sm font-black transition-all uppercase">
                                 <div className="flex items-center gap-3">
                                   <LogOut size={20} />
                                   <span>Sign Out</span>
@@ -266,32 +303,62 @@ const AppLayout = ({ children, user, onLogout }: any) => {
 const App = () => {
   const [user, setUser] = useState<User | null>(null);
   const [showAuthModal, setShowAuthModal] = useState(false);
-  const [authStep, setAuthStep] = useState<'category' | 'credentials'>('category');
+  const [showSetupModal, setShowSetupModal] = useState(false);
+
+  // Trigger AuthModal if #login is detected in the URL
+  useEffect(() => {
+    const handleHashChange = () => {
+      if (window.location.hash === '#login' && !user) {
+        setShowAuthModal(true);
+      }
+    };
+    handleHashChange(); // Run once on mount
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, [user]);
 
   const handleAutoLogin = (email: string) => {
-    const foundUser = mockService.getAllUsers().find(u => u.email.toLowerCase() === email.toLowerCase());
+    const foundUser = mockService.getAllUsers().find(u => u.email.toLowerCase() === email.toLowerCase().trim());
     if (foundUser) { setUser(foundUser); setShowAuthModal(false); } else { alert("Account not found."); }
+  };
+
+  const handleCodeLogin = (loggedUser: User) => {
+    setUser(loggedUser);
+    setShowAuthModal(false);
+    if (!loggedUser.hasSetCredentials) {
+        setShowSetupModal(true);
+    }
+  };
+
+  const handleSetupComplete = () => {
+      setShowSetupModal(false);
   };
 
   const wrapLayout = (element: React.ReactElement) => (
     <Router>
         <Routes>
-            <Route path="/l/:itemId" element={<SharedProductLanding user={user} onLogin={() => { setAuthStep('category'); setShowAuthModal(true); }} />} />
+            <Route path="/l/:itemId" element={<SharedProductLanding user={user} onLogin={() => setShowAuthModal(true)} />} />
             <Route path="/*" element={
                 user ? (
                     <AppLayout user={user} onLogout={() => setUser(null)}>
                         {element}
+                        <FirstTimeSetupModal 
+                            isOpen={showSetupModal}
+                            user={user}
+                            onComplete={handleSetupComplete}
+                        />
                     </AppLayout>
                 ) : (
                     <>
-                        <ConsumerLanding onLogin={() => { setAuthStep('category'); setShowAuthModal(true); }} />
+                        <ConsumerLanding onLogin={() => setShowAuthModal(true)} />
                         <AuthModal 
                             isOpen={showAuthModal} 
-                            onClose={() => setShowAuthModal(false)} 
-                            step={authStep} 
-                            setStep={setAuthStep} 
-                            onLogin={(e: any) => {e.preventDefault();}} 
+                            onClose={() => { 
+                              setShowAuthModal(false); 
+                              if (window.location.hash === '#login') window.location.hash = ''; 
+                            }} 
                             onAutoLogin={handleAutoLogin} 
+                            onCodeLogin={handleCodeLogin}
                         />
                     </>
                 )
@@ -314,6 +381,7 @@ const App = () => {
       <Route path="/customer-portal" element={<CustomerPortals />} />
       <Route path="/impact" element={<EnvironmentalImpact />} />
       <Route path="/live-ops" element={<AdminMarketOps />} />
+      <Route path="/admin-accounts" element={user?.role === UserRole.ADMIN ? <AdminAccounts /> : <Navigate to="/" />} />
       <Route path="/pricing-requests" element={user ? <PricingRequests user={user} /> : <Navigate to="/" />} />
       <Route path="/negotiations" element={user ? <AdminPriceRequests /> : <Navigate to="/" />} />
       <Route path="/rep-management" element={<AdminRepManagement />} />
@@ -330,8 +398,109 @@ const App = () => {
   );
 };
 
-const AuthModal = ({ isOpen, onClose, step, setStep, onAutoLogin }: any) => {
+const FirstTimeSetupModal = ({ isOpen, user, onComplete }: any) => {
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [isSaving, setIsSaving] = useState(false);
+
     if (!isOpen) return null;
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setIsSaving(true);
+        await new Promise(r => setTimeout(r, 1200));
+        mockService.updateUserCredentials(user.id, email);
+        setIsSaving(false);
+        onComplete();
+    };
+
+    return (
+        <div className="fixed inset-0 z-[600] flex items-center justify-center bg-[#0F172A]/95 backdrop-blur-xl p-4">
+            <div className="bg-white rounded-[3rem] shadow-2xl w-full max-w-lg overflow-hidden animate-in zoom-in-95 duration-300">
+                <div className="p-10 border-b border-gray-100 bg-gray-50/50 flex flex-col items-center text-center">
+                    <div className="w-16 h-16 bg-indigo-600 rounded-[1.5rem] flex items-center justify-center text-white mb-6 shadow-xl shadow-indigo-200">
+                        <Lock size={28}/>
+                    </div>
+                    <h2 className="text-2xl font-black text-gray-900 uppercase tracking-tight leading-none mb-2">Secure Your Portal</h2>
+                    <p className="text-sm text-gray-500 font-medium">Assign a permanent email and password to replace your one-time access code.</p>
+                </div>
+                <form onSubmit={handleSubmit} className="p-10 space-y-6">
+                    <div className="space-y-4">
+                        <div className="relative group">
+                            <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300 group-focus-within:text-indigo-500 transition-colors" size={18}/>
+                            <input 
+                                required 
+                                type="email" 
+                                placeholder="Permanent Business Email"
+                                className="w-full pl-12 pr-4 py-4 bg-gray-50 border border-gray-100 rounded-2xl font-bold text-gray-900 outline-none focus:ring-4 focus:ring-indigo-50/10 focus:bg-white transition-all"
+                                value={email}
+                                onChange={e => setEmail(e.target.value)}
+                            />
+                        </div>
+                        <div className="relative group">
+                            <Key className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300 group-focus-within:text-indigo-500 transition-colors" size={18}/>
+                            <input 
+                                required 
+                                type="password" 
+                                placeholder="Create Secure Password"
+                                className="w-full pl-12 pr-4 py-4 bg-gray-50 border border-gray-100 rounded-2xl font-bold text-gray-900 outline-none focus:ring-4 focus:ring-indigo-50/10 focus:bg-white transition-all"
+                                value={password}
+                                onChange={e => setPassword(e.target.value)}
+                            />
+                        </div>
+                    </div>
+                    <button 
+                        type="submit"
+                        disabled={isSaving || !email || !password}
+                        className="w-full py-5 bg-[#043003] text-white rounded-2xl font-black uppercase tracking-[0.2em] shadow-xl hover:bg-black transition-all flex items-center justify-center gap-3 disabled:opacity-50"
+                    >
+                        {isSaving ? <Loader2 className="animate-spin" size={24}/> : <><ShieldCheck size={20}/> Finalize Credentials</>}
+                    </button>
+                    <p className="text-[10px] text-center text-gray-400 font-bold uppercase tracking-widest leading-relaxed">
+                        By setting credentials, you agree to our Terms of Trade & Digital Platform Agreements.
+                    </p>
+                </form>
+            </div>
+        </div>
+    );
+};
+
+const AuthModal = ({ isOpen, onClose, onAutoLogin, onCodeLogin }: any) => {
+    const [mode, setMode] = useState<'CODE' | 'MEMBER'>('CODE');
+    const [loginCode, setLoginCode] = useState('');
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [isLoggingIn, setIsLoggingIn] = useState(false);
+
+    if (!isOpen) return null;
+
+    const handleCodeSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setIsLoggingIn(true);
+        await new Promise(r => setTimeout(r, 1000));
+        const cleanCode = loginCode.trim().toUpperCase();
+        const user = mockService.verifyCodeLogin(cleanCode);
+        if (user) {
+            onCodeLogin(user);
+        } else {
+            alert("Invalid access code. Please check your text message and try again.");
+        }
+        setIsLoggingIn(false);
+    };
+
+    const handlePasswordSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setIsLoggingIn(true);
+        await new Promise(r => setTimeout(r, 1000));
+        const user = mockService.verifyPasswordLogin(email, password);
+        if (user) {
+            onCodeLogin(user); // Reuse logic to set user
+        } else {
+            alert("Login failed. Please check your credentials or use your invitation code.");
+        }
+        setIsLoggingIn(false);
+    };
+
     const demoLogins = [
         { label: 'ADMIN HQ', email: 'admin@pz.com', color: 'bg-slate-50 border-slate-100 hover:bg-slate-100' },
         { label: 'WHOLESALER', email: 'sarah@fresh.com', color: 'bg-blue-50 border-blue-100 hover:bg-blue-100' },
@@ -342,13 +511,115 @@ const AuthModal = ({ isOpen, onClose, step, setStep, onAutoLogin }: any) => {
 
     return (
         <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-            <div className="bg-white rounded-[3rem] shadow-2xl w-full max-w-lg overflow-hidden animate-in zoom-in-95">
-                <div className="p-8 border-b border-gray-100 flex justify-between items-center">
+            <div className="bg-white rounded-[3rem] shadow-2xl w-full max-w-lg overflow-hidden animate-in zoom-in-95 flex flex-col max-h-[95vh]">
+                <div className="p-8 border-b border-gray-100 flex justify-between items-center bg-white shrink-0">
                     <h2 className="text-xl font-black text-gray-900 tracking-tight uppercase">Portal Access</h2>
-                    <button onClick={onClose} className="text-gray-300 hover:text-gray-600 transition-all"><X size={28} /></button>
+                    <button onClick={onClose} className="text-gray-300 hover:text-gray-900 transition-all"><X size={28} /></button>
                 </div>
-                <div className="p-10 space-y-6">
-                    <p className="text-xs font-black text-gray-400 uppercase tracking-widest text-center">Select Portal Mode</p>
+                
+                <div className="flex-1 overflow-y-auto custom-scrollbar p-10 space-y-10">
+                    
+                    {mode === 'CODE' ? (
+                        <form onSubmit={handleCodeSubmit} className="space-y-8 animate-in fade-in slide-in-from-top-2 duration-500 text-center">
+                            <div className="w-16 h-16 bg-indigo-50 text-indigo-600 rounded-3xl flex items-center justify-center mx-auto shadow-inner-sm">
+                                <ShieldCheck size={32} />
+                            </div>
+                            <div>
+                                <h3 className="font-black uppercase text-base tracking-widest text-gray-900">Enter Access Code</h3>
+                                <p className="text-xs text-gray-400 font-medium mt-1">Found in your PZ invitation text message</p>
+                            </div>
+                            
+                            <div className="relative group">
+                                <input 
+                                    required
+                                    autoFocus
+                                    placeholder="••••••"
+                                    className="w-full text-center py-6 bg-gray-50 border-2 border-gray-100 rounded-[2rem] font-black text-4xl text-gray-900 outline-none focus:ring-8 focus:ring-indigo-50/5 focus:bg-white focus:border-indigo-600 transition-all uppercase tracking-[0.4em] placeholder-gray-200"
+                                    value={loginCode}
+                                    onChange={e => setLoginCode(e.target.value)}
+                                />
+                            </div>
+
+                            <button 
+                                type="submit"
+                                disabled={isLoggingIn || !loginCode}
+                                className="w-full py-5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-xl shadow-indigo-100 transition-all active:scale-95 flex items-center justify-center gap-3 disabled:opacity-50"
+                            >
+                                {isLoggingIn ? <Loader2 className="animate-spin" size={24}/> : <><LogIn size={20}/> Unlock Portal</>}
+                            </button>
+
+                            <button 
+                                type="button"
+                                onClick={() => setMode('MEMBER')}
+                                className="text-[10px] font-black text-indigo-500 uppercase tracking-widest hover:underline"
+                            >
+                                Already a member? Sign in with password
+                            </button>
+                        </form>
+                    ) : (
+                        <form onSubmit={handlePasswordSubmit} className="space-y-6 animate-in fade-in slide-in-from-top-2 duration-500">
+                             <div className="text-center space-y-2 mb-8">
+                                <div className="w-16 h-16 bg-emerald-50 text-emerald-600 rounded-3xl flex items-center justify-center mx-auto shadow-inner-sm">
+                                    <UserIcon size={32} />
+                                </div>
+                                <h3 className="font-black uppercase text-base tracking-widest text-gray-900">Member Login</h3>
+                                <p className="text-xs text-gray-400 font-medium">Use your permanent business credentials</p>
+                            </div>
+
+                            <div className="space-y-4">
+                                <div className="relative group">
+                                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300 group-focus-within:text-indigo-500 transition-colors" size={18}/>
+                                    <input 
+                                        required 
+                                        type="email" 
+                                        placeholder="Business Email"
+                                        className="w-full pl-12 pr-4 py-4 bg-gray-50 border border-gray-100 rounded-2xl font-bold text-gray-900 outline-none focus:ring-4 focus:ring-indigo-50/10 focus:bg-white transition-all"
+                                        value={email}
+                                        onChange={e => setEmail(e.target.value)}
+                                    />
+                                </div>
+                                <div className="relative group">
+                                    <Key className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300 group-focus-within:text-indigo-500 transition-colors" size={18}/>
+                                    <input 
+                                        required 
+                                        type="password" 
+                                        placeholder="Password"
+                                        className="w-full pl-12 pr-4 py-4 bg-gray-50 border border-gray-100 rounded-2xl font-bold text-gray-900 outline-none focus:ring-4 focus:ring-indigo-50/10 focus:bg-white transition-all"
+                                        value={password}
+                                        onChange={e => setPassword(e.target.value)}
+                                    />
+                                </div>
+                            </div>
+
+                            <button 
+                                type="submit"
+                                disabled={isLoggingIn || !email || !password}
+                                className="w-full py-5 bg-[#043003] hover:bg-black text-white rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-xl transition-all active:scale-95 flex items-center justify-center gap-3 disabled:opacity-50"
+                            >
+                                {isLoggingIn ? <Loader2 className="animate-spin" size={24}/> : <><LogIn size={20}/> Member Access</>}
+                            </button>
+
+                            <div className="text-center">
+                                <button 
+                                    type="button"
+                                    onClick={() => setMode('CODE')}
+                                    className="text-[10px] font-black text-gray-400 uppercase tracking-widest hover:underline"
+                                >
+                                    New here? Enter access code
+                                </button>
+                            </div>
+                        </form>
+                    )}
+
+                    <div className="relative">
+                        <div className="absolute inset-0 flex items-center" aria-hidden="true">
+                            <div className="w-full border-t border-gray-100"></div>
+                        </div>
+                        <div className="relative flex justify-center text-[10px] font-black uppercase tracking-widest">
+                            <span className="bg-white px-4 text-gray-300">Or use demo accounts</span>
+                        </div>
+                    </div>
+
                     <div className="grid grid-cols-1 gap-3">
                         {demoLogins.map(demo => (
                             <button 

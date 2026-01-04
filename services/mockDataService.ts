@@ -166,6 +166,17 @@ class MockDataService {
     return null;
   }
 
+  verifyPasswordLogin(email: string, password?: string): User | null {
+      this.loadFromStorage();
+      const user = this.users.find(u => u.email.toLowerCase() === email.toLowerCase().trim());
+      // For mock purposes, we allow login if user exists and has set credentials. 
+      // In a real app, we'd verify the hashed password.
+      if (user && user.hasSetCredentials) {
+          return user;
+      }
+      return null;
+  }
+
   createManualPortalInvite(data: any) {
     const code = Math.random().toString(36).substring(2, 8).toUpperCase();
     const invite: PortalInvite = {

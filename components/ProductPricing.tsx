@@ -457,9 +457,9 @@ const AddInventoryModal = ({ isOpen, onClose, user, products, onComplete, initia
                              <div className="md:col-span-2 flex items-center gap-2 text-indigo-600 font-black text-[10px] uppercase tracking-[0.2em] mb-2">
                                 <MapPin size={14}/> Sourcing & Warehouse
                              </div>
-                             <FormInput label="Original Farm / Source" name="farmerName" value={farmerName} onChange={e => setFarmerName(e.target.value)} placeholder="e.g. Sunny Hill Orchards" required={false} />
-                             <FormInput label="Harvest Location" name="harvestLocation" value={harvestLocation} onChange={e => setHarvestLocation(e.target.value)} placeholder="e.g. Mildura, VIC" required={false} />
-                             <FormInput label="Internal Bin Location" name="warehouseLocation" value={warehouseLocation} onChange={e => setWarehouseLocation(e.target.value)} placeholder="e.g. Section B-42" required={false} />
+                             <div><label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 ml-1 block">Original Farm / Source</label><input className="w-full p-4 bg-white border border-gray-100 rounded-2xl text-sm font-bold text-gray-900 outline-none" placeholder="e.g. Sunny Hill Orchards" value={farmerName} onChange={e => setFarmerName(e.target.value)} /></div>
+                             <div><label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 ml-1 block">Harvest Location</label><input className="w-full p-4 bg-white border border-gray-100 rounded-2xl text-sm font-bold text-gray-900 outline-none" placeholder="e.g. Mildura, VIC" value={harvestLocation} onChange={e => setHarvestLocation(e.target.value)} /></div>
+                             <div><label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 ml-1 block">Internal Bin Location</label><input className="w-full p-4 bg-white border border-gray-100 rounded-2xl text-sm font-bold text-gray-900 outline-none" placeholder="e.g. Section B-42" value={warehouseLocation} onChange={e => setWarehouseLocation(e.target.value)} /></div>
                         </div>
 
                         <div className="bg-orange-50/50 p-6 md:p-8 rounded-[2.5rem] border border-orange-100/50">
@@ -503,17 +503,6 @@ const AddInventoryModal = ({ isOpen, onClose, user, products, onComplete, initia
         </div>
     );
 };
-
-const FormInput = ({ label, name, value, onChange, placeholder, required = true }: any) => (
-    <div>
-        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 ml-1 block">{label}</label>
-        <input 
-            required={required}
-            className="w-full p-4 bg-white border border-gray-100 rounded-2xl text-sm font-bold text-gray-900 outline-none focus:ring-2 focus:ring-indigo-500 transition-all" 
-            name={name} value={value} onChange={onChange} placeholder={placeholder} 
-        />
-    </div>
-);
 
 export const ProductPricing: React.FC<ProductPricingProps> = ({ user }) => {
   const [activeTab, setActiveTab] = useState<'catalog' | 'rules'>('catalog');
@@ -579,8 +568,8 @@ export const ProductPricing: React.FC<ProductPricingProps> = ({ user }) => {
     <div className="space-y-6 md:space-y-8 animate-in fade-in duration-500 pb-20">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 mb-4 md:mb-10">
         <div>
-            <h1 className="text-2xl md:text-3xl font-black text-gray-900 tracking-tight uppercase leading-none">Catalog Manager</h1>
-            <p className="text-gray-400 font-bold text-xs md:text-sm mt-1">Global catalog manager for {user.businessName}.</p>
+            <h1 className="text-2xl md:text-3xl font-black text-gray-900 tracking-tight uppercase leading-none">Inventory & Price</h1>
+            <p className="text-gray-400 font-bold text-xs md:text-sm mt-1">Global catalog and stock management for {user.businessName}.</p>
         </div>
         <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
             <button 
@@ -605,7 +594,7 @@ export const ProductPricing: React.FC<ProductPricingProps> = ({ user }) => {
                     <ShoppingBag size={24}/>
                 </div>
                 <div className="bg-gray-100 p-1 rounded-xl flex border border-gray-200">
-                    <button onClick={() => setActiveTab('catalog')} className={`px-6 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'catalog' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}>Global List</button>
+                    <button onClick={() => setActiveTab('catalog')} className={`px-6 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'catalog' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}>Market Catalog</button>
                     <button onClick={() => setActiveTab('rules')} className={`px-6 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 ${activeTab === 'rules' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}><Zap size={12}/> Yield Rules</button>
                 </div>
             </div>
@@ -613,7 +602,7 @@ export const ProductPricing: React.FC<ProductPricingProps> = ({ user }) => {
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300 group-focus-within:text-emerald-500 transition-colors" size={20} />
                 <input 
                     type="text" 
-                    placeholder="Search catalog varieties..." 
+                    placeholder="Search varieties..." 
                     className="w-full pl-12 pr-6 py-3.5 md:py-4 bg-white border border-gray-200 rounded-2xl text-sm font-bold text-slate-900 focus:ring-4 focus:ring-indigo-50 outline-none transition-all shadow-sm" 
                     value={searchTerm} 
                     onChange={(e) => setSearchTerm(e.target.value)}

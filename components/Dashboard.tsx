@@ -221,29 +221,28 @@ const OrderFulfillmentModal = ({ isOpen, onClose, order, products, customers, on
 
 const LiveActivitySnapshot = ({ stats, onCardClick }: any) => {
     return (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+        <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6 mb-12">
             {/* ORDERS TODAY */}
             <button 
                 onClick={() => onCardClick('ORDERS')}
-                className="bg-white p-8 rounded-[2rem] border border-gray-100 shadow-sm flex flex-col justify-between group hover:shadow-xl transition-all relative overflow-hidden h-44 text-left active:scale-[0.98]"
+                className="bg-white p-4 md:p-8 rounded-[2rem] border border-gray-100 shadow-sm flex flex-col justify-between group hover:shadow-xl transition-all relative overflow-hidden aspect-square md:h-44 text-left active:scale-[0.98]"
             >
                 <div className="flex justify-between items-start relative z-10">
                     <div>
-                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-1">Orders Today</p>
-                        <p className="text-[9px] font-bold text-gray-300 uppercase tracking-tight">Incoming live volume</p>
+                        <p className="text-[9px] md:text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-1">Orders Today</p>
+                        <p className="hidden md:block text-[9px] font-bold text-gray-300 uppercase tracking-tight">Incoming live volume</p>
                     </div>
                     <div className="flex items-center gap-1.5">
                         <span className="relative flex h-2 w-2">
                             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                             <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
                         </span>
-                        <span className="text-[8px] font-black text-emerald-600 uppercase tracking-widest">Live</span>
                     </div>
                 </div>
                 <div className="flex justify-between items-end relative z-10">
-                    <h3 className="text-4xl font-black text-gray-900 tracking-tighter">{stats.ordersToday || 0}</h3>
-                    <div className="p-3 bg-blue-50 text-blue-500 rounded-2xl group-hover:scale-110 transition-transform">
-                        <Activity size={24} />
+                    <h3 className="text-2xl md:text-4xl font-black text-gray-900 tracking-tighter">{stats.ordersToday || 0}</h3>
+                    <div className="p-2 md:p-3 bg-blue-50 text-blue-500 rounded-xl md:rounded-2xl group-hover:scale-110 transition-transform">
+                        <Activity size={20} className="md:w-6 md:h-6" />
                     </div>
                 </div>
             </button>
@@ -251,25 +250,24 @@ const LiveActivitySnapshot = ({ stats, onCardClick }: any) => {
             {/* LIVE WHOLESALERS (MATCHED BUYERS) */}
             <button 
                 onClick={() => onCardClick('BUYERS')}
-                className="bg-white p-8 rounded-[2rem] border border-gray-100 shadow-sm flex flex-col justify-between group hover:shadow-xl transition-all relative overflow-hidden h-44 text-left active:scale-[0.98]"
+                className="bg-white p-4 md:p-8 rounded-[2rem] border border-gray-100 shadow-sm flex flex-col justify-between group hover:shadow-xl transition-all relative overflow-hidden aspect-square md:h-44 text-left active:scale-[0.98]"
             >
                 <div className="flex justify-between items-start relative z-10">
                     <div>
-                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-1">Live Wholesalers</p>
-                        <p className="text-[9px] font-bold text-gray-300 uppercase tracking-tight">Looking to buy your stock</p>
+                        <p className="text-[9px] md:text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-1">Wholesalers</p>
+                        <p className="hidden md:block text-[9px] font-bold text-gray-300 uppercase tracking-tight">Looking to buy your stock</p>
                     </div>
                     <div className="flex items-center gap-1.5">
                         <span className="relative flex h-2 w-2">
                             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                             <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
                         </span>
-                        <span className="text-[8px] font-black text-emerald-600 uppercase tracking-widest">Live</span>
                     </div>
                 </div>
                 <div className="flex justify-between items-end relative z-10">
-                    <h3 className="text-4xl font-black text-gray-900 tracking-tighter">{stats.wholesalers || 0}</h3>
-                    <div className="p-3 bg-indigo-50 text-indigo-500 rounded-2xl group-hover:scale-110 transition-transform">
-                        <Globe size={24} />
+                    <h3 className="text-2xl md:text-4xl font-black text-gray-900 tracking-tighter">{stats.wholesalers || 0}</h3>
+                    <div className="p-2 md:p-3 bg-indigo-50 text-indigo-500 rounded-xl md:rounded-2xl group-hover:scale-110 transition-transform">
+                        <Globe size={20} className="md:w-6 md:h-6" />
                     </div>
                 </div>
             </button>
@@ -277,18 +275,18 @@ const LiveActivitySnapshot = ({ stats, onCardClick }: any) => {
             {/* ACTIVE DELIVERIES (ON THE ROAD) */}
             <button 
                 onClick={() => onCardClick('DELIVERIES')}
-                className="bg-white p-8 rounded-[2rem] border border-gray-100 shadow-sm flex flex-col justify-between group hover:shadow-xl transition-all relative overflow-hidden h-44 text-left active:scale-[0.98]"
+                className="bg-white p-4 md:p-8 rounded-[2rem] border border-gray-100 shadow-sm flex flex-col justify-between group hover:shadow-xl transition-all relative overflow-hidden aspect-square md:h-44 text-left active:scale-[0.98]"
             >
                 <div className="flex justify-between items-start relative z-10">
                     <div>
-                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-1">On the Road</p>
-                        <p className="text-[9px] font-bold text-gray-300 uppercase tracking-tight">Deliveries out for dispatch</p>
+                        <p className="text-[9px] md:text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-1">On the Road</p>
+                        <p className="hidden md:block text-[9px] font-bold text-gray-300 uppercase tracking-tight">Deliveries out for dispatch</p>
                     </div>
                 </div>
                 <div className="flex justify-between items-end relative z-10">
-                    <h3 className="text-4xl font-black text-gray-900 tracking-tighter">{stats.deliveriesOnRoad || 0}</h3>
-                    <div className="p-3 bg-emerald-50 text-emerald-500 rounded-2xl group-hover:scale-110 transition-transform">
-                        <Truck size={24} />
+                    <h3 className="text-2xl md:text-4xl font-black text-gray-900 tracking-tighter">{stats.deliveriesOnRoad || 0}</h3>
+                    <div className="p-2 md:p-3 bg-emerald-50 text-emerald-500 rounded-xl md:rounded-2xl group-hover:scale-110 transition-transform">
+                        <Truck size={20} className="md:w-6 md:h-6" />
                     </div>
                 </div>
             </button>
@@ -296,18 +294,18 @@ const LiveActivitySnapshot = ({ stats, onCardClick }: any) => {
             {/* MY REVENUE TODAY */}
             <button 
                 onClick={() => onCardClick('REVENUE')}
-                className="bg-white p-8 rounded-[2rem] border border-gray-100 shadow-sm flex flex-col justify-between group hover:shadow-xl transition-all relative overflow-hidden h-44 text-left active:scale-[0.98]"
+                className="bg-white p-4 md:p-8 rounded-[2rem] border border-gray-100 shadow-sm flex flex-col justify-between group hover:shadow-xl transition-all relative overflow-hidden aspect-square md:h-44 text-left active:scale-[0.98]"
             >
                 <div className="flex justify-between items-start relative z-10">
                     <div>
-                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-1">My Revenue Today</p>
-                        <p className="text-[9px] font-bold text-gray-300 uppercase tracking-tight">Personal daily volume</p>
+                        <p className="text-[9px] md:text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-1">Revenue</p>
+                        <p className="hidden md:block text-[9px] font-bold text-gray-300 uppercase tracking-tight">Personal daily volume</p>
                     </div>
                 </div>
                 <div className="flex justify-between items-end relative z-10">
-                    <h3 className="text-4xl font-black text-gray-900 tracking-tighter">${stats.myRevenueToday?.toLocaleString() || '0'}</h3>
-                    <div className="p-3 bg-emerald-50 text-emerald-500 rounded-2xl group-hover:scale-110 transition-transform">
-                        <DollarSign size={24} />
+                    <h3 className="text-xl md:text-3xl font-black text-gray-900 tracking-tighter leading-none">${stats.myRevenueToday >= 1000 ? (stats.myRevenueToday / 1000).toFixed(1) + 'k' : stats.myRevenueToday?.toLocaleString() || '0'}</h3>
+                    <div className="p-2 md:p-3 bg-emerald-50 text-emerald-500 rounded-xl md:rounded-2xl group-hover:scale-110 transition-transform">
+                        <DollarSign size={20} className="md:w-6 md:h-6" />
                     </div>
                 </div>
             </button>
@@ -393,8 +391,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ user }) => {
       <div className="mb-6 border-b border-gray-100 pb-6 px-2 space-y-8">
         <div className="flex justify-between items-end">
             <div>
-                <h1 className="text-[44px] font-black text-[#0F172A] tracking-tighter uppercase leading-none">Partner Operations</h1>
-                <p className="text-gray-400 font-bold text-sm tracking-tight mt-2 flex items-center gap-3 uppercase">
+                <h1 className="text-[32px] md:text-[44px] font-black text-[#0F172A] tracking-tighter uppercase leading-none">Partner Operations</h1>
+                <p className="text-gray-400 font-bold text-xs tracking-tight mt-2 flex items-center gap-3 uppercase">
                     Management Console <span className="w-1.5 h-1.5 rounded-full bg-gray-200"></span> {user.businessName}
                 </p>
             </div>
@@ -471,7 +469,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user }) => {
                                 )}
                             </div>
 
-                            <div className="bg-gray-100 p-1 rounded-2xl flex gap-1 border border-gray-200 shadow-inner-sm w-full md:w-auto">
+                            <div className="bg-gray-100 p-1 rounded-2xl flex gap-1 border border-gray-200 shadow-inner-sm w-full md:w-auto overflow-x-auto">
                                 {[
                                     { id: 'INCOMING', label: 'Incoming', count: incomingQueue.length, icon: Bell, color: 'text-orange-500' },
                                     { id: 'PROCESSING', label: 'Processing', count: processingQueue.length, icon: Package, color: 'text-indigo-500' },
