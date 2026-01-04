@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { User, InventoryItem, Product, ChatMessage, UserRole, Customer, Order } from '../types';
+import { User, InventoryItem, Product, ChatMessage, UserRole, Customer, Order, SupplierPriceRequest, ProcurementRequest } from '../types';
 import { mockService } from '../services/mockDataService';
 import { triggerNativeSms, generateProductDeepLink } from '../services/smsService';
 import { InviteBuyerModal } from './InviteBuyerModal';
@@ -11,7 +11,9 @@ import {
   Store, MapPin, Phone, ShieldCheck, Tag, ChevronRight, Users, UserCheck,
   ArrowLeft, UserPlus, Smartphone, Contact, Loader2, Building, Mail, BookOpen,
   Package, DollarSign, Truck, Camera, Image as ImageIcon, ChevronDown, FolderOpen,
-  Sprout, ShoppingCart, MessageSquare, Globe, ArrowUpRight, HelpCircle, Activity, Heart, TrendingUp
+  Sprout, ShoppingCart, MessageSquare, Globe, ArrowUpRight, HelpCircle, Activity, Heart, TrendingUp,
+  /* Added missing Calendar icon import */
+  Calendar
 } from 'lucide-react';
 import { ChatDialog } from './ChatDialog';
 
@@ -27,7 +29,7 @@ const SA_PRODUCE_MARKET_SUPPLIERS = [
     { name: 'AMJ Produce', mobile: '0422 777 444', email: 'sales@amjproduce.com.au', location: 'Burma Drive, Pooraka', specialty: 'Fruit & Veg', type: 'Warehouse' },
     { name: 'B&C Fresh', mobile: '0433 666 555', email: 'admin@bcfresh.com.au', location: 'Store 12-14', specialty: 'Exotics', type: 'Wholesaler' },
     { name: 'Bache Bros', mobile: '0444 555 666', email: 'bachebros@internode.on.net', location: 'Store 60', specialty: 'Potatoes & Onions', type: 'Wholesaler' },
-    { name: 'Ceravolo Orchards', mobile: '0455 444 777', email: 'info@ceravolo.com.au', location: 'Store 32', specialty: 'Apples & Pears', type: 'Warehouse' },
+    { name: 'Ceravolo Orchards', mobile: '0455 444 777', email: 'info@ceravolo.com.au', location: 'Store 32', specialty: 'Apples & Pears', type: 'Wholesaler' },
     { name: 'Costa Group (SA)', mobile: '0466 333 888', email: 'sa.sales@costagroup.com.au', location: 'Store 101', specialty: 'Global Produce', type: 'Warehouse' },
     { name: 'Favco SA', mobile: '0477 222 999', email: 'sales@favcosa.com.au', location: 'Store 41-43', specialty: 'Premium Stonefruit', type: 'Wholesaler' },
     { name: 'GD Produce', mobile: '0488 111 000', email: 'sales@gdproduce.com.au', location: 'Store 12', specialty: 'Leafy Greens', type: 'Wholesaler' },
@@ -89,7 +91,7 @@ const SendProductOfferModal = ({ isOpen, onClose, targetPartner, products }: {
         <div className="fixed inset-0 z-[140] flex items-center justify-center bg-black/70 backdrop-blur-md p-4">
             <div className="bg-white rounded-[3rem] shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95">
                 <div className="p-8 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
-                    <div><h2 className="text-xl font-black text-gray-900 uppercase tracking-tight">Direct Photo Offer</h2><p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-1">Target: {targetPartner.name || targetPartner.businessName}</p></div>
+                    <div><h2 className="text-xl font-black text-gray-900 uppercase tracking-tight">Direct Photo Offer</h2><p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-1">To: {targetPartner.name || targetPartner.businessName}</p></div>
                     <button onClick={onClose} className="text-gray-400 hover:text-gray-600 p-2"><X size={24}/></button>
                 </div>
                 <form onSubmit={handleSubmit} className="p-8 space-y-6">
@@ -122,7 +124,7 @@ export const Contacts: React.FC<ContactsProps> = ({ user }) => {
   const queryParams = new URLSearchParams(location.search);
   const targetId = queryParams.get('id');
 
-  const [activeTab, setActiveTab] = useState<'customers' | 'suppliers'>('customers');
+  const [activeTab, setActiveTab] = useState<'customers' | 'suppliers' | 'procurement'>('customers');
   const [selectedState, setSelectedState] = useState('SA');
   const [activeContact, setActiveContact] = useState<User | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -130,20 +132,42 @@ export const Contacts: React.FC<ContactsProps> = ({ user }) => {
   const [sendProductTarget, setSendProductTarget] = useState<any>(null);
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [pendingRequestsCount, setPendingRequestsCount] = useState(0);
+  const [sentRequestsCount, setSentRequestsCount] = useState(0);
+
+  /* Added missing state to support handleConnect and ChatDialog */
+  const [isChatOpen, setIsChatOpen] = useState(false);
+  const [chatTargetName, setChatTargetName] = useState('');
   
   // Sourcing Data
   const [suppliers, setSuppliers] = useState<User[]>([]);
   const [supplierInventory, setSupplierInventory] = useState<Record<string, InventoryItem[]>>({});
+  const [procurementRequests, setProcurementRequests] = useState<ProcurementRequest[]>([]);
 
   const [products, setProducts] = useState<Product[]>([]);
   const [myCustomers, setMyCustomers] = useState<Customer[]>([]);
   const [allOrders, setAllOrders] = useState<Order[]>([]);
 
   useEffect(() => {
+    loadData();
+    const interval = setInterval(loadData, 5000);
+    return () => clearInterval(interval);
+  }, [targetId, user.id]);
+
+  const loadData = () => {
     setProducts(mockService.getAllProducts());
     setMyCustomers(mockService.getCustomers());
     setAllOrders(mockService.getOrders(user.id));
     
+    // Check for incoming price requests (to me as wholesaler)
+    const incomingRequests = mockService.getSupplierPriceRequests(user.id).filter(r => r.status === 'PENDING');
+    setPendingRequestsCount(incomingRequests.length);
+
+    // Check for outgoing procurement requests (sent by me)
+    const myProcurements = mockService.getProcurementRequests(user.id).filter(r => r.buyerId === user.id);
+    setProcurementRequests(myProcurements);
+    setSentRequestsCount(myProcurements.filter(r => r.status === 'PENDING').length);
+
     // Load Suppliers for sourcing view
     const allUsers = mockService.getAllUsers();
     const networkSuppliers = allUsers.filter(u => u.id !== user.id && (u.role === UserRole.WHOLESALER || u.role === UserRole.FARMER));
@@ -164,7 +188,13 @@ export const Contacts: React.FC<ContactsProps> = ({ user }) => {
     } else {
       setActiveContact(null);
     }
-  }, [targetId, user.id]);
+  };
+
+  /* Fixed: Added missing handleConnect function */
+  const handleConnect = (name: string) => {
+    setChatTargetName(name);
+    setIsChatOpen(true);
+  };
 
   const handleSendMessage = (text: string) => {
     if (!activeContact || !text.trim()) return;
@@ -182,8 +212,7 @@ export const Contacts: React.FC<ContactsProps> = ({ user }) => {
   const filteredMarketSuppliers = selectedState === 'SA' 
     ? SA_PRODUCE_MARKET_SUPPLIERS.filter(s => 
         s.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-        s.specialty.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        s.type.toLowerCase().includes(searchTerm.toLowerCase())
+        s.specialty.toLowerCase().includes(searchTerm.toLowerCase())
       )
     : [];
 
@@ -236,18 +265,22 @@ export const Contacts: React.FC<ContactsProps> = ({ user }) => {
       <div className="px-2 flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
           <div className="flex items-center gap-5">
             <div className="w-16 h-16 bg-white rounded-[1.25rem] shadow-sm border border-gray-100 flex items-center justify-center text-[#043003]">
-                {activeTab === 'customers' ? <Users size={36} /> : <Store size={36} />}
+                {activeTab === 'customers' ? <Users size={36} /> : activeTab === 'suppliers' ? <Store size={36} /> : <ShoppingCart size={36}/>}
             </div>
             <div>
-                <h1 className="text-4xl font-black text-gray-900 tracking-tight uppercase leading-none">{activeTab === 'customers' ? 'Buyer Network' : 'Market Discovery'}</h1>
-                <p className="text-gray-500 font-bold text-xs uppercase tracking-widest mt-2">{activeTab === 'customers' ? 'Connected accounts & manual lead management' : 'Explore regional markets and new wholesale buyers'}</p>
+                <h1 className="text-4xl font-black text-gray-900 tracking-tight uppercase leading-none">
+                    {activeTab === 'customers' ? 'Buyer Network' : activeTab === 'suppliers' ? 'Market Discovery' : 'Pending Sourcing'}
+                </h1>
+                <p className="text-gray-500 font-bold text-xs uppercase tracking-widest mt-2">
+                    {activeTab === 'customers' ? 'Connected accounts & manual lead management' : activeTab === 'suppliers' ? 'Explore regional markets and new wholesale buyers' : 'Track price requests you sent to suppliers'}
+                </p>
             </div>
           </div>
           <div className="relative w-full md:w-96 group">
             <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-300 group-focus-within:text-indigo-500 transition-colors" size={20} />
             <input 
                 type="text" 
-                placeholder={activeTab === 'customers' ? "Search connected buyers..." : "Search wholesalers & warehouses..."} 
+                placeholder={activeTab === 'customers' ? "Search connected buyers..." : "Search network..."} 
                 value={searchTerm} 
                 onChange={(e) => setSearchTerm(e.target.value)} 
                 className="w-full pl-14 pr-8 py-5 bg-white border-2 border-gray-100 rounded-[1.5rem] text-sm font-bold text-gray-900 outline-none focus:ring-4 focus:ring-indigo-50/5 transition-all shadow-sm"
@@ -255,12 +288,19 @@ export const Contacts: React.FC<ContactsProps> = ({ user }) => {
           </div>
       </div>
 
-      <div className="bg-gray-100/50 p-1.5 rounded-[1.5rem] inline-flex border border-gray-200 shadow-sm mx-2">
-        <button onClick={() => setActiveTab('customers')} className={`px-10 py-4 rounded-2xl text-[11px] font-black uppercase tracking-[0.2em] transition-all whitespace-nowrap ${activeTab === 'customers' ? 'bg-white text-gray-900 shadow-md ring-1 ring-black/5' : 'text-gray-400 hover:text-gray-600'}`}>My Customers</button>
+      <div className="bg-gray-100/50 p-1.5 rounded-[1.5rem] inline-flex border border-gray-200 shadow-sm mx-2 overflow-x-auto no-scrollbar max-w-full">
+        <button onClick={() => setActiveTab('customers')} className={`px-10 py-4 rounded-2xl text-[11px] font-black uppercase tracking-[0.2em] transition-all whitespace-nowrap flex items-center gap-2 ${activeTab === 'customers' ? 'bg-white text-gray-900 shadow-md ring-1 ring-black/5' : 'text-gray-400 hover:text-gray-600'}`}>
+            My Buyers
+            {pendingRequestsCount > 0 && <span className="w-5 h-5 bg-red-600 text-white rounded-full flex items-center justify-center text-[9px] font-black animate-pulse">{pendingRequestsCount}</span>}
+        </button>
+        <button onClick={() => setActiveTab('procurement')} className={`px-10 py-4 rounded-2xl text-[11px] font-black uppercase tracking-[0.2em] transition-all whitespace-nowrap flex items-center gap-2 ${activeTab === 'procurement' ? 'bg-white text-gray-900 shadow-md ring-1 ring-black/5' : 'text-gray-400 hover:text-gray-600'}`}>
+            Pending Sourcing
+            {sentRequestsCount > 0 && <span className="w-5 h-5 bg-red-600 text-white rounded-full flex items-center justify-center text-[9px] font-black">{sentRequestsCount}</span>}
+        </button>
         <button onClick={() => setActiveTab('suppliers')} className={`px-10 py-4 rounded-2xl text-[11px] font-black uppercase tracking-[0.2em] transition-all flex items-center gap-3 whitespace-nowrap ${activeTab === 'suppliers' ? 'bg-white text-gray-900 shadow-md ring-1 ring-black/5' : 'text-gray-400 hover:text-gray-600'}`}><ShoppingCart size={14}/> Market Directory</button>
       </div>
       
-      {activeTab === 'customers' ? (
+      {activeTab === 'customers' && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 px-2">
               <div onClick={() => setIsInviteModalOpen(true)} className="border-4 border-dashed border-gray-100 rounded-[2.5rem] p-10 flex flex-col items-center justify-center text-center group hover:bg-emerald-50/30 hover:border-emerald-200 transition-all cursor-pointer min-h-[400px] shadow-inner-sm bg-white/50">
                   <div className="w-20 h-20 bg-white rounded-[1.5rem] shadow-xl flex items-center justify-center mb-8 border border-gray-50 transition-transform group-hover:scale-110 group-hover:-rotate-3 group-hover:shadow-emerald-100">
@@ -320,7 +360,69 @@ export const Contacts: React.FC<ContactsProps> = ({ user }) => {
                   );
               })}
           </div>
-      ) : (
+      )}
+
+      {activeTab === 'procurement' && (
+          <div className="space-y-8 animate-in slide-in-from-bottom-4 duration-500 px-2">
+              <div className="bg-indigo-50 border border-indigo-100 rounded-[2.5rem] p-8 flex items-center gap-6 relative overflow-hidden group">
+                  <div className="absolute top-0 right-0 p-8 opacity-5 transform rotate-12 scale-150"><Clock size={120} className="text-indigo-900"/></div>
+                  <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center text-indigo-600 shadow-sm shrink-0 border border-indigo-100"><Clock size={28}/></div>
+                  <div>
+                      <h3 className="text-lg font-black text-indigo-900 uppercase tracking-tight">Active Procurement Track</h3>
+                      <p className="text-indigo-800 text-sm font-medium leading-relaxed max-w-2xl">These are price requests you have sent to regional suppliers. We'll notify you the moment a quote is returned.</p>
+                  </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {procurementRequests.map(req => {
+                      const supplier = mockService.getAllUsers().find(u => u.id === req.supplierId);
+                      return (
+                        <div key={req.id} className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm flex flex-col justify-between h-[340px] hover:shadow-xl transition-all group">
+                            <div>
+                                <div className="flex justify-between items-start mb-6">
+                                    <div className="flex items-center gap-4">
+                                        <div className="w-12 h-12 bg-gray-50 rounded-2xl flex items-center justify-center text-indigo-600 font-black text-lg border border-gray-100 shadow-inner-sm">
+                                            {supplier?.businessName.charAt(0)}
+                                        </div>
+                                        <div>
+                                            <h4 className="font-black text-gray-900 uppercase text-sm leading-none mb-1.5">{supplier?.businessName}</h4>
+                                            <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">{supplier?.role}</p>
+                                        </div>
+                                    </div>
+                                    <span className="bg-orange-50 text-orange-600 px-3 py-1 rounded-lg text-[8px] font-black uppercase tracking-widest border border-orange-100 animate-pulse">AWAITING QUOTE</span>
+                                </div>
+                                
+                                <div className="bg-gray-50 p-6 rounded-3xl border border-gray-100 group-hover:bg-indigo-50 group-hover:border-indigo-100 transition-all">
+                                    <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-2">Requested Variety</p>
+                                    <p className="text-xl font-black text-gray-900 tracking-tight uppercase leading-none">{req.productName}</p>
+                                    <div className="flex items-center gap-4 mt-4">
+                                        <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-1.5"><Package size={12}/> {req.quantity}kg</span>
+                                        <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-1.5">
+                                          /* Added missing Calendar icon usage */
+                                          <Calendar size={12}/> {new Date(req.requiredDate).toLocaleDateString()}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <button onClick={() => handleConnect(supplier?.businessName || 'Supplier')} className="w-full py-4 bg-white border-2 border-gray-100 text-gray-400 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:border-indigo-600 hover:text-indigo-600 transition-all flex items-center justify-center gap-2">
+                                <MessageSquare size={16}/> Message Supplier
+                            </button>
+                        </div>
+                      );
+                  })}
+                  {procurementRequests.length === 0 && (
+                      <div className="col-span-full py-40 text-center opacity-30 grayscale">
+                          <ShoppingCart size={80} className="mx-auto mb-6 text-gray-300"/>
+                          <p className="text-lg font-black uppercase tracking-[0.2em] text-gray-400">No pending price requests found</p>
+                          <p className="text-xs text-gray-400 font-bold uppercase tracking-widest mt-2">Request prices from the Sourcing Hub in your Dashboard</p>
+                      </div>
+                  )}
+              </div>
+          </div>
+      )}
+
+      {activeTab === 'suppliers' && (
           <div className="space-y-8 animate-in slide-in-from-bottom-4 duration-500 px-2">
             
             <div className="bg-white p-2 rounded-[2rem] border border-gray-200 shadow-sm flex items-center gap-2 overflow-x-auto no-scrollbar mb-8 whitespace-nowrap">
@@ -336,7 +438,7 @@ export const Contacts: React.FC<ContactsProps> = ({ user }) => {
             </div>
 
             <div className="bg-white rounded-[3rem] border border-gray-100 shadow-sm overflow-hidden flex flex-col min-h-[500px]">
-                <div className="p-10 border-b border-gray-100 bg-gray-50/50 flex flex-col md:flex-row justify-between items-center gap-8 shrink-0">
+                <div className="p-10 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center gap-8 shrink-0">
                     <div className="flex items-center gap-5">
                         <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center text-emerald-600 shadow-md border border-gray-100 shrink-0">
                             <ShoppingCart size={28}/>
@@ -423,6 +525,19 @@ export const Contacts: React.FC<ContactsProps> = ({ user }) => {
         />
       )}
       <InviteBuyerModal isOpen={isInviteModalOpen} onClose={() => setIsInviteModalOpen(false)} wholesaler={user} />
+
+      {/* Added missing ChatDialog to component for handleConnect functionality */}
+      <ChatDialog 
+        isOpen={isChatOpen} 
+        onClose={() => setIsChatOpen(false)} 
+        orderId="NETWORK-INQUIRY" 
+        issueType={`Procurement Inquiry: Market Discovery`} 
+        repName={chatTargetName} 
+      />
     </div>
   );
 };
+
+const LinkIcon = ({ size = 24, ...props }: any) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+);

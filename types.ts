@@ -239,6 +239,19 @@ export interface SupplierPriceRequest {
   items: SupplierPriceRequestItem[];
 }
 
+export interface ProcurementRequest {
+  id: string;
+  buyerId: string;
+  supplierId: string;
+  productId: string;
+  productName: string;
+  quantity: number;
+  requiredDate: string;
+  requiredTime: string;
+  status: 'PENDING' | 'QUOTED' | 'ACCEPTED' | 'REJECTED';
+  timestamp: string;
+}
+
 export interface PricingRule {
   id: string;
   ownerId: string;

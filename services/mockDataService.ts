@@ -4,7 +4,7 @@ import {
   SupplierPriceRequest, PricingRule,
   SupplierPriceRequestItem, AppNotification, ChatMessage, OrderItem,
   Driver, Packer, RegistrationRequest, OnboardingFormTemplate,
-  BusinessProfile, OrderIssue, Industry, ProductUnit
+  BusinessProfile, OrderIssue, Industry, ProductUnit, ProcurementRequest
 } from '../types';
 import { triggerNativeSms } from './smsService';
 
@@ -36,13 +36,52 @@ export const INDUSTRIES: Industry[] = [
 ];
 
 export const USERS_INITIAL: User[] = [
-  { id: 'u1', name: 'Admin User', businessName: 'Platform Zero', role: UserRole.ADMIN, email: 'admin@pz.com', favoriteProductIds: [], isConfirmed: true, hasSetCredentials: true },
-  { id: 'u2', name: 'Sarah Wholesaler', businessName: 'Fresh Wholesalers', role: UserRole.WHOLESALER, email: 'sarah@fresh.com', dashboardVersion: 'v2', activeSellingInterests: ['Tomatoes', 'Lettuce', 'Eggplants'], activeBuyingInterests: ['Potatoes', 'Apples'], businessProfile: { isComplete: true } as any, favoriteProductIds: [], isConfirmed: true, hasSetCredentials: true },
-  { id: 'u3', name: 'Bob Farmer', businessName: 'Green Valley Farms', role: UserRole.FARMER, email: 'bob@greenvalley.com', dashboardVersion: 'v2', activeSellingInterests: ['Potatoes', 'Apples'], activeBuyingInterests: [], businessProfile: { isComplete: true } as any, favoriteProductIds: [], isConfirmed: true, hasSetCredentials: true },
-  { id: 'u4', name: 'Alice Consumer', businessName: 'The Morning Cafe', role: UserRole.CONSUMER, email: 'alice@cafe.com', phone: '0412 345 678', industry: 'Cafe', smsNotificationsEnabled: true, businessProfile: { isComplete: true } as any, favoriteProductIds: ['p1', 'p2', 'p-banana-cav'], isConfirmed: true, hasSetCredentials: true },
-  { id: 'u5', name: 'Gary Grocer', businessName: 'Local Corner Grocers', role: UserRole.GROCERY, email: 'gary@grocer.com', phone: '0411 222 333', industry: 'Grocery Store', smsNotificationsEnabled: true, businessProfile: { isComplete: true } as any, favoriteProductIds: [], isConfirmed: true, hasSetCredentials: true },
-  { id: 'rep1', name: 'Alex Johnson', businessName: 'Platform Zero', role: UserRole.PZ_REP, email: 'rep1@pz.com', commissionRate: 5.0, isConfirmed: true, hasSetCredentials: true },
-  { id: 'rep2', name: 'Sam Taylor', businessName: 'Platform Zero', role: UserRole.PZ_REP, email: 'rep2@pz.com', commissionRate: 5.0, isConfirmed: true, hasSetCredentials: true },
+  { id: 'u1', name: 'Admin User', businessName: 'Platform Zero HQ', role: UserRole.ADMIN, email: 'admin@pz.com', favoriteProductIds: [], isConfirmed: true, hasSetCredentials: true },
+  { id: 'u2', name: 'Sarah Wholesaler', businessName: 'Fresh Wholesalers Adelaide', role: UserRole.WHOLESALER, email: 'sarah@fresh.com', phone: '0411 111 111', dashboardVersion: 'v2', activeSellingInterests: ['Tomatoes', 'Lettuce', 'Eggplants'], activeBuyingInterests: ['Potatoes', 'Apples', 'Carrots'], businessProfile: { isComplete: true, businessLocation: 'Pooraka, SA' } as any, favoriteProductIds: [], isConfirmed: true, hasSetCredentials: true },
+  { id: 'u3', name: 'Bob Farmer', businessName: 'Green Valley Farms', role: UserRole.FARMER, email: 'bob@greenvalley.com', phone: '0422 222 222', dashboardVersion: 'v2', activeSellingInterests: ['Potatoes', 'Apples', 'Tomatoes', 'Carrots'], activeBuyingInterests: [], businessProfile: { isComplete: true, businessLocation: 'Mildura, VIC' } as any, favoriteProductIds: [], isConfirmed: true, hasSetCredentials: true },
+  { id: 'u4', name: 'Alice Consumer', businessName: 'The Morning Cafe', role: UserRole.CONSUMER, email: 'alice@cafe.com', phone: '0433 333 333', industry: 'Cafe', smsNotificationsEnabled: true, businessProfile: { isComplete: true, businessLocation: 'Adelaide CBD' } as any, favoriteProductIds: ['p1', 'p2'], isConfirmed: true, hasSetCredentials: true },
+  { id: 'u5', name: 'Gary Grocer', businessName: 'Local Corner Grocers', role: UserRole.GROCERY, email: 'gary@grocer.com', phone: '0444 444 444', industry: 'Grocery Store', smsNotificationsEnabled: true, businessProfile: { isComplete: true, businessLocation: 'Glenelg, SA' } as any, favoriteProductIds: [], isConfirmed: true, hasSetCredentials: true },
+];
+
+const INITIAL_PRODUCTS: Product[] = [
+    { id: 'p1', name: 'Roma Tomatoes', variety: 'Truss', category: 'Vegetable', imageUrl: 'https://images.unsplash.com/photo-1592924357228-91a4daadcfea?auto=format&fit=crop&q=80&w=400', defaultPricePerKg: 4.50, unit: 'KG', co2SavingsPerKg: 1.2 },
+    { id: 'p2', name: 'Iceberg Lettuce', variety: 'Crisp', category: 'Vegetable', imageUrl: 'https://images.unsplash.com/photo-1622206141855-8979313f8981?auto=format&fit=crop&q=80&w=400', defaultPricePerKg: 3.20, unit: 'KG', co2SavingsPerKg: 0.8 },
+    { id: 'p3', name: 'Dutch Cream Potatoes', variety: 'Creamy', category: 'Vegetable', imageUrl: 'https://images.unsplash.com/photo-1518977676601-b53f82aba655?auto=format&fit=crop&q=80&w=400', defaultPricePerKg: 2.80, unit: 'KG', co2SavingsPerKg: 0.5 },
+    { id: 'p4', name: 'Pink Lady Apples', variety: 'Export Grade', category: 'Fruit', imageUrl: 'https://images.unsplash.com/photo-1567306226416-28f0efdc88ce?auto=format&fit=crop&q=80&w=400', defaultPricePerKg: 5.50, unit: 'KG', co2SavingsPerKg: 1.5 },
+    { id: 'p5', name: 'Black Eggplant', variety: 'Standard', category: 'Vegetable', imageUrl: 'https://images.unsplash.com/photo-1528137858141-866416f91f75?auto=format&fit=crop&q=80&w=400', defaultPricePerKg: 6.20, unit: 'KG', co2SavingsPerKg: 0.9 },
+    { id: 'p6', name: 'Nantes Carrots', variety: 'Heirloom', category: 'Vegetable', imageUrl: 'https://images.unsplash.com/photo-1598170845058-32b9d6a5da37?auto=format&fit=crop&q=80&w=400', defaultPricePerKg: 3.90, unit: 'KG', co2SavingsPerKg: 0.7 },
+];
+
+const INITIAL_INVENTORY: InventoryItem[] = [
+    // Sarah (u2) has some stock but a deficit for Tomatoes
+    { id: 'inv1', ownerId: 'u2', productId: 'p1', lotNumber: 'PZ-LOT-1001', quantityKg: 30, status: 'Available', uploadedAt: new Date().toISOString(), harvestDate: new Date().toISOString(), expiryDate: new Date(Date.now() + 86400000 * 5).toISOString(), warehouseLocation: 'Bin A1' },
+    { id: 'inv2', ownerId: 'u2', productId: 'p2', lotNumber: 'PZ-LOT-1002', quantityKg: 80, status: 'Available', uploadedAt: new Date().toISOString(), harvestDate: new Date().toISOString(), expiryDate: new Date(Date.now() + 86400000 * 3).toISOString(), warehouseLocation: 'Bin B4' },
+    // Bob (u3) has plenty of Tomatoes and Potatoes (Sourcing targets)
+    { id: 'inv3', ownerId: 'u3', productId: 'p1', lotNumber: 'PZ-LOT-2001', quantityKg: 500, status: 'Available', uploadedAt: new Date().toISOString(), harvestDate: new Date().toISOString(), expiryDate: new Date(Date.now() + 86400000 * 7).toISOString(), harvestLocation: 'Mildura Field 4', logisticsPrice: 15.00 },
+    { id: 'inv4', ownerId: 'u3', productId: 'p3', lotNumber: 'PZ-LOT-2002', quantityKg: 1200, status: 'Available', uploadedAt: new Date().toISOString(), harvestDate: new Date().toISOString(), expiryDate: new Date(Date.now() + 86400000 * 14).toISOString(), harvestLocation: 'Mildura Field 1', logisticsPrice: 25.00 },
+    { id: 'inv5', ownerId: 'u3', productId: 'p6', lotNumber: 'PZ-LOT-2003', quantityKg: 300, status: 'Available', uploadedAt: new Date().toISOString(), harvestDate: new Date().toISOString(), expiryDate: new Date(Date.now() + 86400000 * 6).toISOString(), harvestLocation: 'Mildura Field 2', logisticsPrice: 10.00 },
+];
+
+const INITIAL_CUSTOMERS: Customer[] = [
+    { id: 'u4', businessName: 'The Morning Cafe', contactName: 'Alice Consumer', email: 'alice@cafe.com', phone: '0433 333 333', category: 'Cafe', location: 'Adelaide CBD', connectedSupplierId: 'u2', connectedSupplierName: 'Fresh Wholesalers Adelaide', connectionStatus: 'Active', pzMarkup: 15, pzPaymentTermsDays: 7, commonProducts: 'Tomatoes, Lettuce, Avocado' },
+    { id: 'u5', businessName: 'Local Corner Grocers', contactName: 'Gary Grocer', email: 'gary@grocer.com', phone: '0444 444 444', category: 'Grocery Store', location: 'Glenelg, SA', connectedSupplierId: 'u2', connectedSupplierName: 'Fresh Wholesalers Adelaide', connectionStatus: 'Active', pzMarkup: 12, pzPaymentTermsDays: 14, commonProducts: 'Potatoes, Carrots, Onions' },
+];
+
+const INITIAL_ORDERS: Order[] = [
+    // Today's Orders for Sarah (u2) from Alice (u4)
+    { id: 'o-101', buyerId: 'u4', sellerId: 'u2', status: 'Pending', date: new Date().toISOString(), totalAmount: 325.00, items: [
+        { productId: 'p1', quantityKg: 50, pricePerKg: 4.50 }, // Sarah only has 30kg -> Deficit!
+        { productId: 'p2', quantityKg: 20, pricePerKg: 3.20 },
+    ], paymentStatus: 'Unpaid', source: 'Marketplace' },
+    // A confirmed order
+    { id: 'o-102', buyerId: 'u5', sellerId: 'u2', status: 'Confirmed', date: new Date().toISOString(), totalAmount: 185.00, items: [
+        { productId: 'p5', quantityKg: 10, pricePerKg: 6.20 },
+        { productId: 'p2', quantityKg: 30, pricePerKg: 3.20 },
+    ], paymentStatus: 'Unpaid', source: 'Direct', confirmedAt: new Date().toISOString() },
+    // A delivered order for history
+    { id: 'o-103', buyerId: 'u4', sellerId: 'u2', status: 'Delivered', date: new Date(Date.now() - 86400000).toISOString(), totalAmount: 450.00, items: [
+        { productId: 'p1', quantityKg: 100, pricePerKg: 4.50 }
+    ], paymentStatus: 'Paid', source: 'Marketplace', deliveredAt: new Date(Date.now() - 43200000).toISOString() },
 ];
 
 class MockDataService {
@@ -61,13 +100,14 @@ class MockDataService {
     'RSL': 15, 'Casino': 15, 'Catering': 15, 'Grocery Store': 15, 'Airlines': 15,
     'School': 15, 'Aged Care': 15, 'Hospital': 15
   };
-  private products: Product[] = [];
-  private inventory: InventoryItem[] = [];
-  private orders: Order[] = [];
+  private products: Product[] = [...INITIAL_PRODUCTS];
+  private inventory: InventoryItem[] = [...INITIAL_INVENTORY];
+  private orders: Order[] = [...INITIAL_ORDERS];
   private issues: OrderIssue[] = [];
   private notifications: AppNotification[] = [];
-  private customers: Customer[] = [];
+  private customers: Customer[] = [...INITIAL_CUSTOMERS];
   private supplierPriceRequests: SupplierPriceRequest[] = [];
+  private procurementRequests: ProcurementRequest[] = [];
   private chatMessages: ChatMessage[] = [];
   private drivers: Driver[] = [];
   private packers: Packer[] = [];
@@ -90,6 +130,7 @@ class MockDataService {
       issues: this.issues,
       customers: this.customers,
       supplierPriceRequests: this.supplierPriceRequests,
+      procurementRequests: this.procurementRequests,
       chatMessages: this.chatMessages,
       notifications: this.notifications,
       drivers: this.drivers,
@@ -115,6 +156,7 @@ class MockDataService {
         this.issues = data.issues || this.issues;
         this.customers = data.customers || this.customers;
         this.supplierPriceRequests = data.supplierPriceRequests || this.supplierPriceRequests;
+        this.procurementRequests = data.procurementRequests || [];
         this.chatMessages = data.chatMessages || this.chatMessages;
         this.notifications = data.notifications || this.notifications;
         this.drivers = data.drivers || this.drivers;
@@ -295,6 +337,15 @@ class MockDataService {
   getSupplierPriceRequests(whId: string) { return this.supplierPriceRequests.filter(r => r.supplierId === whId); }
   getAllSupplierPriceRequests() { return this.supplierPriceRequests; }
   createSupplierPriceRequest(req: SupplierPriceRequest) { this.supplierPriceRequests.push(req); this.saveToStorage(); }
+
+  addProcurementRequest(req: ProcurementRequest) {
+    this.procurementRequests.push(req);
+    this.saveToStorage();
+  }
+
+  getProcurementRequests(userId: string) {
+    return this.procurementRequests.filter(r => r.buyerId === userId || r.supplierId === userId);
+  }
 
   toggleFavorite(userId: string, productId: string) {
     const u = this.users.find(user => user.id === userId);

@@ -33,6 +33,7 @@ import { Inventory } from './components/Inventory';
 import { SharedProductLanding } from './components/SharedProductLanding';
 import { EnvironmentalImpact } from './components/EnvironmentalImpact';
 import { AdminMarketOps } from './components/AdminMarketOps';
+import { InterestsModal } from './components/InterestsModal';
 import { 
   LayoutDashboard, ShoppingCart, Users, Settings, LogOut, Tags, ChevronDown, UserPlus, 
   DollarSign, X, Lock, ArrowLeft, Bell, 
@@ -69,6 +70,7 @@ const AppLayout = ({ children, user, onLogout }: any) => {
   const location = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isConfirmingEmail, setIsConfirmingEmail] = useState(false);
+  const [showDailyPulse, setShowDailyPulse] = useState(false);
   const [isCustomerActivityOpen, setIsCustomerActivityOpen] = useState(
     location.pathname === '/login-requests' || 
     location.pathname === '/customer-portal' || 
@@ -86,6 +88,17 @@ const AppLayout = ({ children, user, onLogout }: any) => {
   useEffect(() => {
     setIsMobileMenuOpen(false);
   }, [location.pathname]);
+
+  // DAILY PULSE: Show alignment modal on every entry (simulated morning prompt)
+  useEffect(() => {
+      if (user && (isPartner || user.role === UserRole.GROCERY || user.role === UserRole.CONSUMER)) {
+          // Check if already aligned this "session"
+          const lastAligned = sessionStorage.getItem(`pz_aligned_${user.id}`);
+          if (!lastAligned) {
+              setShowDailyPulse(true);
+          }
+      }
+  }, [user]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -109,6 +122,11 @@ const AppLayout = ({ children, user, onLogout }: any) => {
     );
     mockService.confirmUser(user.id);
     setIsConfirmingEmail(false);
+  };
+
+  const handleAlignmentSaved = () => {
+      sessionStorage.setItem(`pz_aligned_${user.id}`, 'true');
+      setShowDailyPulse(false);
   };
 
   const NavContent = () => (
@@ -192,6 +210,14 @@ const AppLayout = ({ children, user, onLogout }: any) => {
   
   return (
     <div className="flex min-h-screen bg-white">
+      {/* DAILY ALIGNMENT MODAL (Triggered every login/morning) */}
+      <InterestsModal 
+        user={user} 
+        isOpen={showDailyPulse} 
+        onClose={() => setShowDailyPulse(false)} 
+        onSaved={handleAlignmentSaved} 
+      />
+
       {/* Trading Block Indicator Overlay for unconfirmed new users */}
       {user && !user.isConfirmed && (
         <div className="fixed inset-0 z-[500] bg-black/40 backdrop-blur-md flex items-center justify-center p-6 text-center">
@@ -281,6 +307,7 @@ const AppLayout = ({ children, user, onLogout }: any) => {
 
                         <div className="mt-4 pt-4 border-t border-gray-100 space-y-1">
                             <SidebarLink to="/settings" icon={Settings} label="Settings" active={isActive('/settings')} />
+                            {/* changed onLogout prop to onClick for React button element */}
                             <button onClick={onLogout} className="w-full flex items-center justify-between px-4 py-3.5 text-red-600 hover:bg-red-50 rounded-xl text-sm font-black transition-all uppercase">
                                 <div className="flex items-center gap-3">
                                   <LogOut size={20} />
@@ -518,7 +545,7 @@ const AuthModal = ({ isOpen, onClose, onAutoLogin, onCodeLogin }: any) => {
                                 required
                                 autoFocus
                                 placeholder="••••••"
-                                className="w-full text-center py-6 bg-gray-50 border-2 border-gray-100 rounded-[2rem] font-black text-4xl text-gray-900 outline-none focus:ring-8 focus:ring-indigo-50/50 focus:bg-white focus:border-indigo-600 transition-all uppercase tracking-[0.4em] placeholder-gray-200"
+                                className="w-full text-center py-6 bg-gray-50 border-2 border-gray-100 rounded-[2rem] font-black text-4xl text-gray-900 outline-none focus:ring-8 focus:ring-indigo-50/5 focus:bg-white focus:border-indigo-600 transition-all uppercase tracking-[0.4em] placeholder-gray-200"
                                 value={loginCode}
                                 onChange={e => setLoginCode(e.target.value)}
                             />
